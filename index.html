@@ -200,7 +200,22 @@ document.getElementById("loginBtn").onclick = async () => {
     message.textContent = error.message;
     return;
   }
+const user = data.user;
+const meta = user.user_metadata || {};
 
+const { error: profileError } = await db
+  .from("profiles")
+  .upsert({
+    id: user.id,
+    full_name: meta.full_name || user.email.split("@")[0],
+    class_level: meta.class_level || null,
+    exam_target: meta.exam_target || null
+  }, { onConflict: "id" });
+
+if (profileError) {
+  message.textContent = "Profile Error: " + profileError.message;
+  return;
+}
   message.textContent = "Welcome to STUDYVERSE!";
  document.getElementById("authBox").style.display = "none";
 };
