@@ -190,11 +190,7 @@ function mathGame(){let a=7,b=8,ans=prompt(`Quick challenge: ${a} × ${b} = ?`);
 async function loadLeaderboard() {
   const list = document.getElementById('leaderboardList');
 
-  const { data, error } = await db
-    .from('student_leaderboard')
-    .select('user_id, total_correct, total_attempted, accuracy')
-    .order('total_correct', { ascending: false })
-    .limit(20);
+  const { data, error } = await db.rpc('get_student_leaderboard');
 
   if (error) {
     list.textContent = 'Leaderboard loading error: ' + error.message;
@@ -206,19 +202,20 @@ async function loadLeaderboard() {
     return;
   }
 
-  list.innerHTML = data.map((student, index) => `
-    <div class="rank">
-      <div class="ranknum">${index + 1}</div>
-      <div class="rankname">
-        <b>Student ${index + 1}</b>
-        <small>${student.total_correct} correct · ${student.accuracy}% accuracy</small>
-      </div>
-      <div class="score">${student.total_attempted} attempts</div>
+  list.innerHTML = data.map(student => `
+  <div class="rank">
+    <div class="ranknum">${student.rank}</div>
+    <div class="rankname">
+      <b>Student ${student.rank}</b>
+      <small>${student.total_correct} correct · ${student.accuracy}% accuracy</small>
     </div>
-  `).join('');
+    <div class="score">${student.total_attempted} attempts</div>
+  </div>
+`).join('');
 }
  document.getElementById('lang').addEventListener('change',e=>notify(e.target.value==='hi'?'Hindi interface preference selected. Full translation is part of the next build.':'English interface selected.'));
 renderQ();
+ loadLeaderboard();
  updateQuizStats();
 </script><style>
 #authBox {
