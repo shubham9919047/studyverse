@@ -77,7 +77,23 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
  <section id="classes" class="page"><div class="sectionhead"><h3>Choose your learning track</h3><span class="sub">Demo catalogue</span></div><div class="grid three" id="trackGrid"></div></section>
  <section id="practice" class="page"><div class="sectionhead"><h3>Daily practice zone</h3><span class="tag">Sample quiz</span></div><div class="card"><div class="eyebrow">PHYSICS · CLASS 11–12</div><h3 id="qtext">A body starts from rest and moves with uniform acceleration. Which equation gives its velocity after time t?</h3><div id="opts"></div><div id="feedback" class="muted"></div><div id="quizStats" class="muted">Attempted: 0 | Correct: 0 | Accuracy: 0%</div><button class="action" onclick="nextQ()">Next question ↗</button></div><p class="sub">Questions shown here are illustrative demo content, not an official PYQ archive.</p></section>
  <section id="games" class="page"><div class="sectionhead"><h3>Study games</h3><span class="sub">Quick brain breaks with learning</span></div><div class="grid three"><div class="card"><div class="tileicon">🔢</div><h3>Number Sprint</h3><p class="muted">Solve a quick mental maths challenge.</p><button class="action" onclick="mathGame()">Start game</button><p id="gameout"></p></div><div class="card"><div class="tileicon">🧠</div><h3>Concept Match</h3><p class="muted">Match concepts with their subjects.</p><button class="action" onclick="notify('Concept Match demo is ready for the next build.')">Play demo</button></div><div class="card"><div class="tileicon">🌍</div><h3>GK Challenge</h3><p class="muted">Build everyday awareness.</p><button class="action" onclick="notify('GK Challenge content will be added in the content dashboard.')">Play demo</button></div></div></section>
- <section id="leaderboard" class="page"><div class="sectionhead"><h3>Leaderboard</h3><span class="tag">Illustrative demo scores</span></div><div class="card"><p class="sub">Ranks should be compared within the same class/exam cohort and based on verified, fair assessments.</p><div class="rank"><div class="ranknum">🥇</div><div class="rankname"><b>Aarav Sharma</b><small>Class 10 · Weekly challenge</small></div><div class="score">980 XP</div></div><div class="rank"><div class="ranknum">🥈</div><div class="rankname"><b>Meera Singh</b><small>NEET Foundation</small></div><div class="score">945 XP</div></div><div class="rank"><div class="ranknum">🥉</div><div class="rankname"><b>Kabir Verma</b><small>Class 12 · JEE</small></div><div class="score">910 XP</div></div><div class="rank"><div class="ranknum">4</div><div class="rankname"><b>Student Demo</b><small>Class 12 · Demo account</small></div><div class="score">420 XP</div></div></div></section>
+ <section id="leaderboard" class="page">
+  <div class="sectionhead">
+    <h3>🏆 Student Leaderboard</h3>
+    <span class="tag">Live Rankings</span>
+  </div>
+
+  <div class="card">
+    <h3>Top Students</h3>
+    <p class="muted">
+      Rankings will appear here after verified quiz attempts.
+    </p>
+
+    <div id="leaderboardList">
+      <p class="muted">No quiz records yet.</p>
+    </div>
+  </div>
+</section>
  <section id="community" class="page"><div class="sectionhead"><h3>Study community</h3><span class="tag">Safety-first concept</span></div><div class="grid two"><div class="card"><h3>Find your study room</h3><div class="listitem"><b>Class 9–10 Foundation</b><p class="sub">Concepts, school exams and practice</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>JEE Aspirants</b><p class="sub">Physics · Chemistry · Mathematics</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>NEET Aspirants</b><p class="sub">Biology · Physics · Chemistry</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div></div><div class="card"><h3>Community guidelines</h3><p class="muted">Be kind, stay focused, protect your privacy.</p><ul><li>Use moderated topic-based study rooms.</li><li>Never share passwords, address or phone number publicly.</li><li>Report inappropriate messages and block unwanted contact.</li><li>For younger students, private messaging should be disabled by default.</li></ul><p class="sub">WhatsApp / Telegram invite links can be added by an administrator after safety and privacy review.</p></div></div></section>
  <section id="updates" class="page"><div class="sectionhead"><h3>Exam updates & calendar</h3><span class="tag">Sample entries</span></div><div class="card"><div class="listitem"><div class="row"><b>JEE Main</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://jeemain.nta.nic.in/" target="_blank" rel="noopener">Official JEE Main portal ↗</a></div><div class="listitem"><div class="row"><b>NEET UG</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://exams.nta.ac.in/NEET/" target="_blank" rel="noopener">Official NEET portal ↗</a></div><div class="listitem"><div class="row"><b>UPSC</b><span class="tag">Official calendar</span></div><p class="sub">Check the latest notification and annual calendar.</p><a href="https://upsc.gov.in/" target="_blank" rel="noopener">Official UPSC portal ↗</a></div><p class="sub">A live alert system needs an admin verification workflow and scheduled official-source checks.</p></div></section>
 <section id="myprofile" class="page">
@@ -171,7 +187,37 @@ async function answer(i) {
 }
 function nextQ(){qi=(qi+1)%qs.length;renderQ()}
 function mathGame(){let a=7,b=8,ans=prompt(`Quick challenge: ${a} × ${b} = ?`);document.getElementById('gameout').textContent=ans===null?'Try again whenever you are ready.':(Number(ans)===a*b?'Correct! +10 demo XP 🎉':'Good try! The answer is 56. Keep practicing.')}
-document.getElementById('lang').addEventListener('change',e=>notify(e.target.value==='hi'?'Hindi interface preference selected. Full translation is part of the next build.':'English interface selected.'));
+async function loadLeaderboard() {
+  const list = document.getElementById('leaderboardList');
+
+  const { data, error } = await db
+    .from('student_leaderboard')
+    .select('user_id, total_correct, total_attempted, accuracy')
+    .order('total_correct', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    list.textContent = 'Leaderboard loading error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No quiz records yet.';
+    return;
+  }
+
+  list.innerHTML = data.map((student, index) => `
+    <div class="rank">
+      <div class="ranknum">${index + 1}</div>
+      <div class="rankname">
+        <b>Student ${index + 1}</b>
+        <small>${student.total_correct} correct · ${student.accuracy}% accuracy</small>
+      </div>
+      <div class="score">${student.total_attempted} attempts</div>
+    </div>
+  `).join('');
+}
+ document.getElementById('lang').addEventListener('change',e=>notify(e.target.value==='hi'?'Hindi interface preference selected. Full translation is part of the next build.':'English interface selected.'));
 renderQ();
  updateQuizStats();
 </script><style>
