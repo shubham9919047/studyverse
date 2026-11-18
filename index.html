@@ -420,6 +420,7 @@ document.getElementById("profileExam").textContent =
 
 document.getElementById("profileMembership").textContent =
   (profile.membership || "free").toUpperCase();
+ await checkAdminAccess();
  message.textContent = "Welcome to STUDYVERSE!";
  document.getElementById("authBox").style.display = "none";
 };
@@ -480,7 +481,7 @@ document.getElementById("profileMembership").textContent =
 
   alert("Profile updated successfully!");
 }
- Hoasync function checkAdminAccess() {
+ async function checkAdminAccess() {
   const { data: { user } } = await db.auth.getUser();
 
   const adminButton = document.getElementById('adminNavBtn');
@@ -502,7 +503,19 @@ document.getElementById("profileMembership").textContent =
     adminButton.style.display = 'none';
     return;
   }
+async function logout() {
+  const { error } = await db.auth.signOut();
 
+  if (error) {
+    alert("Logout Error: " + error.message);
+    return;
+  }
+
+  document.getElementById("adminNavBtn").style.display = "none";
+  document.getElementById("authBox").style.display = "block";
+
+  alert("Logged out successfully!");
+}
   adminButton.style.display = data ? 'flex' : 'none';
 }
 </script>
