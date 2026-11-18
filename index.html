@@ -507,7 +507,10 @@ document.getElementById("profileMembership").textContent =
     adminButton.style.display = 'none';
     return;
   }
-async function logout() {
+
+  adminButton.style.display = data ? 'flex' : 'none';
+}
+ async function logout() {
   const { error } = await db.auth.signOut();
 
   if (error) {
@@ -516,11 +519,10 @@ async function logout() {
   }
 
   document.getElementById("adminNavBtn").style.display = "none";
+  document.getElementById("logoutBtn").style.display = "none";
   document.getElementById("authBox").style.display = "block";
 
   alert("Logged out successfully!");
-}
-  adminButton.style.display = data ? 'flex' : 'none';
 }
 </script>
 <!-- END SUPABASE CONNECTION -->
