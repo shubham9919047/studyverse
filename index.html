@@ -220,6 +220,25 @@ if (profileError) {
   message.textContent = "Profile Error: " + profileError.message;
   return;
 }
+ const { data: profile, error: fetchError } = await db
+  .from("profiles")
+  .select("full_name, class_level, exam_target")
+  .eq("id", user.id)
+  .single();
+
+if (fetchError) {
+  message.textContent = "Profile Load Error: " + fetchError.message;
+  return;
+}
+
+document.getElementById("studentName").textContent =
+  profile.full_name || "Student";
+
+document.getElementById("studentClass").textContent =
+  "Class " + (profile.class_level || "Not selected");
+
+document.getElementById("studentAvatar").textContent =
+  (profile.full_name || "S").charAt(0).toUpperCase();
   message.textContent = "Welcome to STUDYVERSE!";
  document.getElementById("authBox").style.display = "none";
 };
