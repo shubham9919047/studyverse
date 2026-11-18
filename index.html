@@ -126,19 +126,43 @@ function updateQuizStats() {
     `Attempted: ${totalAttempted} | Correct: ${totalCorrect} | Accuracy: ${accuracy}%`;
 }
 
-function answer(i) {
+async function answer(i) {
   let q = qs[qi];
+  let isCorrect = (i === q.a);
+
+  const { data: { user }, error: userError } =
+    await db.auth.getUser();
+
+  if (userError || !user) {
+    document.getElementById('feedback').textContent =
+      "Please login first.";
+    return;
+  }
+
+  const { error } = await db
+    .from('quiz_attempts')
+    .insert({
+      user_id: user.id,
+      question_id: 'q' + (qi + 1),
+      is_correct: isCorrect
+    });
+
+  if (error) {
+    document.getElementById('feedback').textContent =
+      "Score save error: " + error.message;
+    return;
+  }
 
   totalAttempted++;
 
-  if (i === q.a) {
+  if (isCorrect) {
     totalCorrect++;
   }
 
   updateQuizStats();
 
   document.getElementById('feedback').textContent =
-    (i === q.a ? 'Correct! ✓ ' : 'Not quite. ') + q.e;
+    (isCorrect ? 'Correct! ✓ ' : 'Not quite. ') + q.e;
 
   document.querySelectorAll('.quizopt').forEach((b, j) => {
     b.disabled = true;
