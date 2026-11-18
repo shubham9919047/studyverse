@@ -428,29 +428,13 @@ document.getElementById("profileMembership").textContent =
  message.textContent = "Welcome to STUDYVERSE!";
  document.getElementById("authBox").style.display = "none";
 };
- async function editProfile() {
-  const { data: { user } } = await db.auth.getUser();
+async function editProfile() {
+  const { data: { user }, error: userError } = await db.auth.getUser();
 
-  if (!user) {
+  if (userError || !user) {
     alert("Please login first.");
     return;
   }
-  
-
-  const { data, error } = await db
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Admin check error:', error.message);
-    adminButton.style.display = 'none';
-    return;
-  }
-
-  adminButton.style.display = data ? 'flex' : 'none';
-}
 
   const newName = prompt("Enter your full name:");
   if (newName === null) return;
