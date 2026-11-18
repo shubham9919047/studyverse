@@ -509,6 +509,67 @@ async function editProfile() {
   alert("Logged out successfully!");
 }
 </script>
+ async function addQuizQuestion() {
+  const message = document.getElementById("quizAdminMessage");
+
+  const question = document.getElementById("quizQuestion").value.trim();
+  const optionA = document.getElementById("quizOptionA").value.trim();
+  const optionB = document.getElementById("quizOptionB").value.trim();
+  const optionC = document.getElementById("quizOptionC").value.trim();
+  const optionD = document.getElementById("quizOptionD").value.trim();
+  const correct = document.getElementById("quizCorrect").value;
+  const explanation = document.getElementById("quizExplanation").value.trim();
+  const classLevel = document.getElementById("quizClass").value.trim();
+  const subject = document.getElementById("quizSubject").value;
+  const difficulty = document.getElementById("quizDifficulty").value;
+
+  if (!question || !optionA || !optionB || !optionC ||
+      !optionD || !correct || !classLevel || !subject) {
+    message.textContent = "Please fill all required fields.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  message.textContent = "Saving question...";
+
+  const { error } = await db.from("quiz_questions").insert({
+    question: question,
+    option_a: optionA,
+    option_b: optionB,
+    option_c: optionC,
+    option_d: optionD,
+    correct_option: correct,
+    explanation: explanation,
+    class_level: classLevel,
+    subject: subject,
+    difficulty: difficulty,
+    is_published: false
+  });
+
+  if (error) {
+    message.textContent = "Save Error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Question saved successfully!";
+
+  [
+    "quizQuestion", "quizOptionA", "quizOptionB",
+    "quizOptionC", "quizOptionD", "quizExplanation", "quizClass"
+  ].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+
+  document.getElementById("quizCorrect").value = "";
+  document.getElementById("quizSubject").value = "";
+  document.getElementById("quizDifficulty").value = "Easy";
+}
 <!-- END SUPABASE CONNECTION -->
 <section id="admin" class="page">
   <div class="sectionhead">
