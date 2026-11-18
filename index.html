@@ -510,5 +510,49 @@ async function editProfile() {
 }
 </script>
 <!-- END SUPABASE CONNECTION -->
+<section id="admin" class="page">
+  <div class="sectionhead">
+    <h3>🛡️ STUDYVERSE Admin Panel</h3>
+    <span class="tag">Administrator</span>
+  </div>
 
+  <div class="card">
+    <h3>📚 Quiz Manager</h3>
+    <p class="muted">Create questions for students.</p>
+
+    <input id="quizQuestion" class="field" placeholder="Enter question">
+    <input id="quizOptionA" class="field" placeholder="Option A">
+    <input id="quizOptionB" class="field" placeholder="Option B">
+    <input id="quizOptionC" class="field" placeholder="Option C">
+    <input id="quizOptionD" class="field" placeholder="Option D">
+
+    <select id="quizCorrect" class="field">
+      <option value="">Select correct answer</option>
+      <option value="A">Option A</option>
+      <option value="B">Option B</option>
+      <option value="C">Option C</option>
+      <option value="D">Option D</option>
+    </select>
+
+    <textarea id="quizExplanation" class="field" placeholder="Explanation"></textarea>
+    <input id="quizClass" class="field" placeholder="Class (e.g. 12)">
+
+    <select id="quizSubject" class="field">
+      <option value="">Select Subject</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Maths">Maths</option>
+      <option value="Biology">Biology</option>
+    </select>
+
+    <select id="quizDifficulty" class="field">
+      <option value="Easy">Easy</option>
+      <option value="Medium">Medium</option>
+      <option value="Hard">Hard</option>
+    </select>
+
+    <button class="action" onclick="addQuizQuestion()">Save Question</button>
+    <p id="quizAdminMessage" class="muted"></p>
+  </div>
+</section>
 </body></html>
