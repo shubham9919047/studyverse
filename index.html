@@ -493,6 +493,9 @@ async function editProfile() {
   }
 
   adminButton.style.display = data ? 'flex' : 'none';
+  if (data) {
+  loadAdminQuestions();
+}
 }
  async function logout() {
   const { error } = await db.auth.signOut();
@@ -508,7 +511,6 @@ async function editProfile() {
 
   alert("Logged out successfully!");
 }
-</script>
  async function addQuizQuestion() {
   const message = document.getElementById("quizAdminMessage");
 
@@ -570,6 +572,72 @@ async function editProfile() {
   document.getElementById("quizSubject").value = "";
   document.getElementById("quizDifficulty").value = "Easy";
 }
+ async function loadAdminQuestions() {
+  const list = document.getElementById("adminQuestionList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("quiz_questions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No questions added yet.";
+    return;
+  }
+
+  list.innerHTML = data.map(q => `
+    <div class="card" style="margin-top:12px">
+      <h4>${q.question}</h4>
+      <p>A. ${q.option_a}</p>
+      <p>B. ${q.option_b}</p>
+      <p>C. ${q.option_c}</p>
+      <p>D. ${q.option_d}</p>
+      <p>Correct Answer: ${q.correct_option}</p>
+      <p>Class ${q.class_level} | ${q.subject} | ${q.difficulty}</p>
+      <p>Status: ${q.is_published ? "Published" : "Draft"}</p>
+
+      <button class="action"
+        onclick="toggleQuestionPublish(${q.id}, ${!q.is_published})">
+        ${q.is_published ? "Unpublish" : "Publish"}
+      </button>
+    </div>
+  `).join("");
+}
+
+async function toggleQuestionPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("quiz_questions")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminQuestions();
+}
+</script>
+ 
 <!-- END SUPABASE CONNECTION -->
 <section id="admin" class="page">
   <div class="sectionhead">
@@ -614,6 +682,13 @@ async function editProfile() {
 
     <button class="action" onclick="addQuizQuestion()">Save Question</button>
     <p id="quizAdminMessage" class="muted"></p>
+   <h3>📋 Question Bank</h3>
+<div id="adminQuestionList">
+  <p class="muted">Questions will appear here.</p>
+</div>
+<button class="action" onclick="loadAdminQuestions()">
+  Refresh Questions
+</button>
   </div>
 </section>
 </body></html>
