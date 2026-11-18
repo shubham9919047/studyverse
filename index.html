@@ -40,6 +40,9 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
  <nav class="nav">
 <button data-page="progress"><span class="ico">↗</span>My Progress</button>
 <button data-page="myprofile"><span class="ico">👤</span>My Profile</button>
+  <button id="adminNavBtn" data-page="admin" style="display:none;">
+  <span class="ico">🛡️</span>Admin Panel
+</button>
 <button data-page="motivation"><span class="ico">✦</span>Motivation</button>
 </nav>
  <div class="sidebottom"><b>Studyverse Promise</b><br>Learn together. Grow together. Every learner matters.</div>
@@ -122,6 +125,44 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
  <button class="action" onclick="editProfile()">
   ✏️ Edit Profile
 </button>
+  </div>
+</section>
+ <section id="admin" class="page">
+  <div class="sectionhead">
+    <h3>🛡️ STUDYVERSE Admin Panel</h3>
+    <span class="tag">Administrator</span>
+  </div>
+
+  <div class="grid three">
+    <div class="card">
+      <h3>📚 Quiz Manager</h3>
+      <p class="muted">Add and manage questions.</p>
+    </div>
+
+    <div class="card">
+      <h3>🌟 Motivation Manager</h3>
+      <p class="muted">Publish motivation content.</p>
+    </div>
+
+    <div class="card">
+      <h3>💡 Thought Manager</h3>
+      <p class="muted">Publish daily thoughts.</p>
+    </div>
+
+    <div class="card">
+      <h3>🖼️ Photo Manager</h3>
+      <p class="muted">Manage study posters.</p>
+    </div>
+
+    <div class="card">
+      <h3>🔔 Notifications</h3>
+      <p class="muted">Send student notifications.</p>
+    </div>
+
+    <div class="card">
+      <h3>📢 Announcements</h3>
+      <p class="muted">Publish important notices.</p>
+    </div>
   </div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
@@ -389,6 +430,22 @@ document.getElementById("profileMembership").textContent =
     alert("Please login first.");
     return;
   }
+  
+
+  const { data, error } = await db
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Admin check error:', error.message);
+    adminButton.style.display = 'none';
+    return;
+  }
+
+  adminButton.style.display = data ? 'flex' : 'none';
+}
 
   const newName = prompt("Enter your full name:");
   if (newName === null) return;
@@ -422,6 +479,31 @@ document.getElementById("profileMembership").textContent =
     newName.charAt(0).toUpperCase();
 
   alert("Profile updated successfully!");
+}
+ Hoasync function checkAdminAccess() {
+  const { data: { user } } = await db.auth.getUser();
+
+  const adminButton = document.getElementById('adminNavBtn');
+  if (!adminButton) return;
+
+  if (!user) {
+    adminButton.style.display = 'none';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Admin check error:', error.message);
+    adminButton.style.display = 'none';
+    return;
+  }
+
+  adminButton.style.display = data ? 'flex' : 'none';
 }
 </script>
 <!-- END SUPABASE CONNECTION -->
