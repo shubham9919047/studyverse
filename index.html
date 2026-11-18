@@ -90,4 +90,104 @@ function nextQ(){qi=(qi+1)%qs.length;renderQ()}
 function mathGame(){let a=7,b=8,ans=prompt(`Quick challenge: ${a} × ${b} = ?`);document.getElementById('gameout').textContent=ans===null?'Try again whenever you are ready.':(Number(ans)===a*b?'Correct! +10 demo XP 🎉':'Good try! The answer is 56. Keep practicing.')}
 document.getElementById('lang').addEventListener('change',e=>notify(e.target.value==='hi'?'Hindi interface preference selected. Full translation is part of the next build.':'English interface selected.'));
 renderQ();
-</script></body></html>
+</script><!-- STUDYVERSE AUTH -->
+<div id="authBox" style="max-width:420px;margin:25px auto;padding:22px;border:1px solid #ddd;border-radius:16px;background:#fff;color:#222">
+  <h2>Welcome to STUDYVERSE</h2>
+  <p>Create your student account or log in.</p>
+
+  <input id="fullName" placeholder="Full Name" style="width:100%;padding:12px;margin:7px 0;box-sizing:border-box">
+  <input id="email" type="email" placeholder="Email Address" style="width:100%;padding:12px;margin:7px 0;box-sizing:border-box">
+  <input id="password" type="password" placeholder="Password" style="width:100%;padding:12px;margin:7px 0;box-sizing:border-box">
+
+  <select id="classLevel" style="width:100%;padding:12px;margin:7px 0">
+    <option value="">Select Class</option>
+    <option>5th</option><option>6th</option><option>7th</option>
+    <option>8th</option><option>9th</option><option>10th</option>
+    <option>11th</option><option>12th</option>
+    <option>Other</option>
+  </select>
+
+  <select id="examTarget" style="width:100%;padding:12px;margin:7px 0">
+    <option value="">Select Exam Target</option>
+    <option>JEE</option><option>NEET</option><option>NDA</option>
+    <option>CUET</option><option>UPSC</option><option>Other</option>
+  </select>
+
+  <button id="signupBtn" style="width:100%;padding:12px;margin-top:10px">Create Account</button>
+  <button id="loginBtn" style="width:100%;padding:12px;margin-top:8px">Login</button>
+  <p id="authMessage" role="status"></p>
+</div>
+<!-- END STUDYVERSE AUTH -->
+ Ho gya
+<!-- SUPABASE CONNECTION -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://cvdfwlijbytnnfciyetf.supabase.co/rest/v1/";
+const SUPABASE_KEY = "*sb_publishable_QGH0bqlmT3OR5xNmaoNIaw_VJ5DKCMT*";
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const message = document.getElementById("authMessage");
+
+document.getElementById("signupBtn").onclick = async () => {
+  const fullName = document.getElementById("fullName").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const classLevel = document.getElementById("classLevel").value;
+  const examTarget = document.getElementById("examTarget").value;
+
+  if (!fullName || !email || password.length < 8) {
+    message.textContent = "Name, email and password (8+ characters) required.";
+    return;
+  }
+
+  message.textContent = "Creating account...";
+
+  const { data, error } = await db.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        class_level: classLevel,
+        exam_target: examTarget
+      }
+    }
+  });
+
+  if (error) {
+    message.textContent = error.message;
+    return;
+  }
+
+  message.textContent = data.session
+    ? "Account created! You are logged in."
+    : "Account created! Please confirm your email, then log in.";
+};
+
+document.getElementById("loginBtn").onclick = async () => {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  message.textContent = "Logging in...";
+
+  const { data, error } = await db.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    message.textContent = error.message;
+    return;
+  }
+
+  message.textContent = "Welcome to STUDYVERSE!";
+};
+</script>
+<!-- END SUPABASE CONNECTION -->
+
+</body></html>
