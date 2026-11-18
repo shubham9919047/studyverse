@@ -97,6 +97,9 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <div class="divider"></div>
     <p><b>Exam Target:</b> <span id="profileExam">Not selected</span></p>
     <p><b>Membership:</b> <span id="profileMembership">Free</span></p>
+ <button class="action" onclick="editProfile()">
+  ✏️ Edit Profile
+</button>
   </div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
@@ -276,6 +279,47 @@ document.getElementById("profileMembership").textContent =
  message.textContent = "Welcome to STUDYVERSE!";
  document.getElementById("authBox").style.display = "none";
 };
+ async function editProfile() {
+  const { data: { user } } = await db.auth.getUser();
+
+  if (!user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const newName = prompt("Enter your full name:");
+  if (newName === null) return;
+
+  const newClass = prompt("Enter your class (e.g. 12):");
+  if (newClass === null) return;
+
+  const newExam = prompt("Enter your exam target (e.g. JEE):");
+  if (newExam === null) return;
+
+  const { error } = await db
+    .from("profiles")
+    .update({
+      full_name: newName.trim(),
+      class_level: newClass.trim(),
+      exam_target: newExam.trim()
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  document.getElementById("profilePageName").textContent = newName;
+  document.getElementById("profilePageClass").textContent = "Class " + newClass;
+  document.getElementById("profileExam").textContent = newExam;
+  document.getElementById("studentName").textContent = newName;
+  document.getElementById("studentClass").textContent = "Class " + newClass;
+  document.getElementById("studentAvatar").textContent =
+    newName.charAt(0).toUpperCase();
+
+  alert("Profile updated successfully!");
+}
 </script>
 <!-- END SUPABASE CONNECTION -->
 
