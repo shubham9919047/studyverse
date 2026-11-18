@@ -90,7 +90,23 @@ function nextQ(){qi=(qi+1)%qs.length;renderQ()}
 function mathGame(){let a=7,b=8,ans=prompt(`Quick challenge: ${a} × ${b} = ?`);document.getElementById('gameout').textContent=ans===null?'Try again whenever you are ready.':(Number(ans)===a*b?'Correct! +10 demo XP 🎉':'Good try! The answer is 56. Keep practicing.')}
 document.getElementById('lang').addEventListener('change',e=>notify(e.target.value==='hi'?'Hindi interface preference selected. Full translation is part of the next build.':'English interface selected.'));
 renderQ();
-</script><!-- STUDYVERSE AUTH -->
+</script><style>
+#authBox {
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: calc(100% - 32px) !important;
+  max-width: 420px !important;
+  height: max-content !important;
+  max-height: calc(100vh - 32px) !important;
+  overflow-y: auto !important;
+  z-index: 999999 !important;
+  box-sizing: border-box !important;
+  border-radius: 18px !important;
+  box-shadow: 0 0 0 100vmax rgba(10,15,30,.94),
+              0 18px 60px rgba(0,0,0,.3) !important;
+}
+</style><!-- STUDYVERSE AUTH -->
 <div id="authBox" style="max-width:420px;margin:25px auto;padding:22px;border:1px solid #ddd;border-radius:16px;background:#fff;color:#222">
   <h2>Welcome to STUDYVERSE</h2>
   <p>Create your student account or log in.</p>
