@@ -312,9 +312,36 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
 
     <div class="card">
-      <h3>📢 Announcements</h3>
-      <p class="muted">Publish important notices.</p>
-    </div>
+  <h3>📢 Announcements Manager</h3>
+  <p class="muted">Create and publish important announcements.</p>
+
+  <input id="announcementTitle" class="field"
+    placeholder="Announcement title">
+
+  <textarea id="announcementContent" class="field"
+    placeholder="Write announcement details"></textarea>
+
+  <select id="announcementLanguage" class="field">
+    <option value="Hindi">Hindi</option>
+    <option value="English">English</option>
+  </select>
+
+  <button class="action" onclick="addStudyAnnouncement()">
+    Save Announcement
+  </button>
+
+  <p id="announcementAdminMessage" class="muted"></p>
+
+  <h3>📋 Announcement List</h3>
+
+  <div id="adminAnnouncementList">
+    <p class="muted">Announcements will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminAnnouncements()">
+    Refresh Announcements
+  </button>
+</div>
   </div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
@@ -1280,6 +1307,121 @@ async function toggleNotificationPublish(id, publish) {
   }
 
   await loadAdminNotifications();
+}
+ async function addStudyAnnouncement() {
+  const messageBox = document.getElementById("announcementAdminMessage");
+  const title = document.getElementById("announcementTitle").value.trim();
+  const content = document.getElementById("announcementContent").value.trim();
+  const language = document.getElementById("announcementLanguage").value;
+
+  if (!title || !content) {
+    messageBox.textContent = "Please fill title and content.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    messageBox.textContent = "Please login first.";
+    return;
+  }
+
+  messageBox.textContent = "Saving announcement...";
+
+  const { error } = await db.from("study_announcements").insert({
+    title: title,
+    content: content,
+    language: language,
+    is_published: false
+  });
+
+  if (error) {
+    messageBox.textContent = "Save Error: " + error.message;
+    return;
+  }
+
+  messageBox.textContent = "Announcement saved successfully!";
+  document.getElementById("announcementTitle").value = "";
+  document.getElementById("announcementContent").value = "";
+
+  await loadAdminAnnouncements();
+}
+
+
+async function loadAdminAnnouncements() {
+  const list = document.getElementById("adminAnnouncementList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("study_announcements")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No announcements added yet.";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const heading = document.createElement("h4");
+    heading.textContent = a.title;
+
+    const content = document.createElement("p");
+    content.textContent = a.content;
+
+    const language = document.createElement("p");
+    language.textContent = "Language: " + a.language;
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + (a.is_published ? "Published" : "Draft");
+
+    const button = document.createElement("button");
+    button.className = "action";
+    button.textContent = a.is_published ? "Unpublish" : "Publish";
+    button.onclick = () => toggleAnnouncementPublish(a.id, !a.is_published);
+
+    card.append(heading, content, language, status, button);
+    list.appendChild(card);
+  });
+}
+
+
+async function toggleAnnouncementPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("study_announcements")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminAnnouncements();
 }
 </script>
  
