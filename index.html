@@ -245,9 +245,39 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
 
     <div class="card">
-      <h3>🖼️ Photo Manager</h3>
-      <p class="muted">Manage study posters.</p>
-    </div>
+  <h3>🖼️ Photo Manager</h3>
+  <p class="muted">Upload and manage study posters.</p>
+
+  <input id="photoTitle" class="field"
+    placeholder="Poster title">
+
+  <input id="photoFile" class="field"
+    type="file" accept="image/*">
+
+  <div id="photoPreviewBox" style="margin-top:10px">
+    <img id="photoPreview"
+      style="display:none;width:100%;max-width:300px;border-radius:12px">
+  </div>
+
+  <textarea id="photoDescription" class="field"
+    placeholder="Image description"></textarea>
+
+  <button class="action" onclick="addStudyPhoto()">
+    Upload & Save Photo
+  </button>
+
+  <p id="photoAdminMessage" class="muted"></p>
+
+  <h3>📋 Photo Library</h3>
+
+  <div id="adminPhotoList">
+    <p class="muted">Photos will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminPhotos()">
+    Refresh Photos
+  </button>
+</div>
 
     <div class="card">
       <h3>🔔 Notifications</h3>
@@ -944,6 +974,171 @@ async function toggleThoughtPublish(id, publish) {
 
   await loadAdminThoughts();
 }
+ async function addStudyPhoto() {
+  const message = document.getElementById("photoAdminMessage");
+  const title = document.getElementById("photoTitle").value.trim();
+  const file = document.getElementById("photoFile").files[0];
+  const description = document.getElementById("photoDescription").value.trim();
+
+  if (!title || !file) {
+    message.textContent = "Please enter title and select an image.";
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    message.textContent = "Please select a valid image.";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message.textContent = "Image size must be below 5 MB.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  message.textContent = "Uploading image...";
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const filePath = user.id + "/" + Date.now() + "_" + safeName;
+
+  const { error: uploadError } = await db.storage
+    .from("studyverse-photos")
+    .upload(filePath, file);
+
+  if (uploadError) {
+    message.textContent = "Upload Error: " + uploadError.message;
+    return;
+  }
+
+  const { data: urlData } = db.storage
+    .from("studyverse-photos")
+    .getPublicUrl(filePath);
+
+  const imageUrl = urlData.publicUrl;
+
+  const { error } = await db.from("study_photos").insert({
+    title: title,
+    image_url: imageUrl,
+    description: description,
+    is_published: false
+  });
+
+  if (error) {
+    message.textContent = "Database Error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Photo uploaded and saved successfully!";
+
+  document.getElementById("photoTitle").value = "";
+  document.getElementById("photoFile").value = "";
+  document.getElementById("photoDescription").value = "";
+  document.getElementById("photoPreview").style.display = "none";
+
+  await loadAdminPhotos();
+}
+
+
+async function loadAdminPhotos() {
+  const list = document.getElementById("adminPhotoList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("study_photos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No photos added yet.";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(photo => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const image = document.createElement("img");
+    image.src = photo.image_url;
+    image.alt = photo.title;
+    image.style.width = "100%";
+    image.style.maxWidth = "300px";
+    image.style.borderRadius = "12px";
+
+    const heading = document.createElement("h4");
+    heading.textContent = photo.title;
+
+    const description = document.createElement("p");
+    description.textContent = photo.description || "";
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + (photo.is_published ? "Published" : "Draft");
+
+    const button = document.createElement("button");
+    button.className = "action";
+    button.textContent = photo.is_published ? "Unpublish" : "Publish";
+    button.onclick = () => togglePhotoPublish(photo.id, !photo.is_published);
+
+    card.append(image, heading, description, status, button);
+    list.appendChild(card);
+  });
+}
+
+
+async function togglePhotoPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("study_photos")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminPhotos();
+}
+
+
+// Image preview
+document.getElementById("photoFile").addEventListener("change", function() {
+  const file = this.files[0];
+  const preview = document.getElementById("photoPreview");
+
+  if (!file) {
+    preview.style.display = "none";
+    return;
+  }
+
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+});
 </script>
  
 <!-- END SUPABASE CONNECTION -->
