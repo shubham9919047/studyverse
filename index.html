@@ -142,6 +142,42 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <div id="studentVideoLectureList"></div>
   </div>
 </section>
+ <section id="studentdoubts" class="page">
+  <div class="sectionhead">
+    <h3>💬 Doubt Solving Portal</h3>
+    <span class="sub">Ask your study doubts</span>
+  </div>
+
+  <div class="card">
+    <input id="studentDoubtSubject" class="field"
+      placeholder="Subject">
+
+    <input id="studentDoubtClass" class="field"
+      placeholder="Class (e.g. 12)">
+
+    <input id="studentDoubtChapter" class="field"
+      placeholder="Chapter name">
+
+    <textarea id="studentDoubtMessage" class="field"
+      placeholder="Describe your doubt in detail"></textarea>
+
+    <button class="action" onclick="submitStudentDoubt()">
+      Submit Doubt
+    </button>
+
+    <p id="studentDoubtMessageStatus" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h3>My Doubts & Replies</h3>
+
+    <button class="action" onclick="loadMyDoubts()">
+      Load My Doubts
+    </button>
+
+    <div id="myDoubtList"></div>
+  </div>
+</section>
  <section id="mocktestportal" class="page">
   <div class="sectionhead">
     <h3>📝 Mock Test Portal</h3>
@@ -4971,6 +5007,125 @@ async function toggleVideoLecturePublish(id, publish) {
       save
     );
 
+    container.appendChild(card);
+  });
+}
+ async function submitStudentDoubt() {
+  const subject = document.getElementById('studentDoubtSubject').value.trim();
+  const classLevel = document.getElementById('studentDoubtClass').value.trim();
+  const chapter = document.getElementById('studentDoubtChapter').value.trim();
+  const doubtMessage = document.getElementById('studentDoubtMessage').value.trim();
+  const message = document.getElementById('studentDoubtMessageStatus');
+
+  if (!subject || !doubtMessage) {
+    message.textContent = 'Subject and doubt message are required.';
+    return;
+  }
+
+  message.textContent = 'Submitting doubt...';
+
+  const { data: userData, error: userError } = await db.auth.getUser();
+
+  if (userError || !userData.user) {
+    message.textContent = 'Please login first.';
+    return;
+  }
+
+  const user = userData.user;
+
+  let studentName = 'Student';
+
+  const { data: profile } = await db
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profile && profile.full_name) {
+    studentName = profile.full_name;
+  }
+
+  const { error } = await db
+    .from('study_doubts')
+    .insert([{
+      user_id: user.id,
+      student_name: studentName,
+      subject: subject,
+      class_level: classLevel,
+      chapter: chapter,
+      doubt_message: doubtMessage
+    }]);
+
+  if (error) {
+    message.textContent = 'Submission error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Doubt submitted successfully!';
+
+  document.getElementById('studentDoubtSubject').value = '';
+  document.getElementById('studentDoubtClass').value = '';
+  document.getElementById('studentDoubtChapter').value = '';
+  document.getElementById('studentDoubtMessage').value = '';
+
+  await loadMyDoubts();
+}
+
+async function loadMyDoubts() {
+  const container = document.getElementById('myDoubtList');
+
+  container.textContent = 'Loading your doubts...';
+
+  const { data: userData, error: userError } = await db.auth.getUser();
+
+  if (userError || !userData.user) {
+    container.textContent = 'Please login first.';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('study_doubts')
+    .select('subject,class_level,chapter,doubt_message,admin_reply,status,created_at')
+    .eq('user_id', userData.user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Loading error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'You have not submitted any doubts yet.';
+    return;
+  }
+
+  data.forEach(doubt => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = doubt.subject || 'Subject';
+
+    const details = document.createElement('p');
+    details.className = 'muted';
+    details.textContent =
+      'Class ' + (doubt.class_level || 'N/A') +
+      ' | ' + (doubt.chapter || 'Chapter N/A');
+
+    const question = document.createElement('p');
+    question.textContent = 'Your Doubt: ' + doubt.doubt_message;
+
+    const status = document.createElement('p');
+    status.textContent = 'Status: ' + (doubt.status || 'Pending');
+
+    const reply = document.createElement('p');
+    reply.textContent = 'Admin Reply: ' +
+      (doubt.admin_reply || 'Awaiting reply');
+
+    card.append(heading, details, question, status, reply);
     container.appendChild(card);
   });
 }
