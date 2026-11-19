@@ -677,6 +677,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Assignments will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📥 Assignment Submission Manager</h3>
+  <p class="muted">View, review and grade student submissions.</p>
+
+  <button class="action" onclick="loadAssignmentSubmissions()">
+    Load Submissions
+  </button>
+
+  <p id="submissionAdminMessage" class="muted"></p>
+
+  <div id="adminSubmissionList">
+    <p class="muted">Submissions will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -3018,6 +3032,128 @@ async function deleteStudyAssignment(id) {
     'Assignment deleted successfully!';
 
   loadStudyAssignments();
+}
+ async function loadAssignmentSubmissions() {
+  const list = document.getElementById('adminSubmissionList');
+  const message = document.getElementById('submissionAdminMessage');
+
+  list.replaceChildren();
+  message.textContent = 'Loading submissions...';
+
+  const { data, error } = await db
+    .from('study_assignment_submissions')
+    .select('*')
+    .order('submitted_at', { ascending: false });
+
+  if (error) {
+    message.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  message.textContent = '';
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No submissions found.';
+    return;
+  }
+
+  for (const submission of data) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h4');
+    heading.textContent = submission.student_name || 'Student';
+    card.appendChild(heading);
+
+    const assignmentInfo = document.createElement('p');
+    assignmentInfo.textContent = 'Assignment ID: ' + submission.assignment_id;
+    card.appendChild(assignmentInfo);
+
+    const submitted = document.createElement('p');
+    submitted.textContent =
+      'Submitted: ' + new Date(submission.submitted_at).toLocaleString();
+    card.appendChild(submitted);
+
+    const answerLabel = document.createElement('p');
+    answerLabel.textContent = 'Student Answer:';
+    card.appendChild(answerLabel);
+
+    const answer = document.createElement('p');
+    answer.textContent = submission.answer;
+    card.appendChild(answer);
+
+    const statusLabel = document.createElement('label');
+    statusLabel.textContent = 'Submission Status';
+    card.appendChild(statusLabel);
+
+    const statusSelect = document.createElement('select');
+    statusSelect.className = 'field';
+
+    ['Submitted', 'Reviewed', 'Graded'].forEach(status => {
+      const option = document.createElement('option');
+      option.value = status;
+      option.textContent = status;
+      if (submission.status === status) option.selected = true;
+      statusSelect.appendChild(option);
+    });
+
+    card.appendChild(statusSelect);
+
+    const feedbackLabel = document.createElement('p');
+    feedbackLabel.textContent = 'Admin Feedback';
+    card.appendChild(feedbackLabel);
+
+    const feedback = document.createElement('textarea');
+    feedback.className = 'field';
+    feedback.value = submission.admin_feedback || '';
+    feedback.placeholder = 'Write feedback';
+    card.appendChild(feedback);
+
+    const marksLabel = document.createElement('p');
+    marksLabel.textContent = 'Marks Obtained';
+    card.appendChild(marksLabel);
+
+    const marks = document.createElement('input');
+    marks.className = 'field';
+    marks.type = 'number';
+    marks.value = submission.marks_obtained ?? '';
+    marks.placeholder = 'Enter marks';
+    card.appendChild(marks);
+
+    const saveButton = document.createElement('button');
+    saveButton.className = 'action';
+    saveButton.textContent = 'Save Review';
+
+    saveButton.onclick = async () => {
+      const markValue = marks.value.trim();
+
+      if (markValue !== '' && !Number.isFinite(Number(markValue))) {
+        message.textContent = 'Please enter valid marks.';
+        return;
+      }
+
+      message.textContent = 'Saving review...';
+
+      const { error: updateError } = await db
+        .from('study_assignment_submissions')
+        .update({
+          status: statusSelect.value,
+          admin_feedback: feedback.value.trim(),
+          marks_obtained: markValue === '' ? null : Number(markValue)
+        })
+        .eq('id', submission.id);
+
+      if (updateError) {
+        message.textContent = 'Save error: ' + updateError.message;
+        return;
+      }
+
+      message.textContent = 'Review saved successfully!';
+    };
+
+    card.appendChild(saveButton);
+    list.appendChild(card);
+  }
 }
 </script>
  
