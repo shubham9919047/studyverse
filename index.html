@@ -539,6 +539,10 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   <div id="studyCalendarGrid"
        style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center;margin-top:15px;">
   </div>
+   <div id="studyCalendarEventDetails" class="card">
+  <h3>📅 Selected Date Events</h3>
+  <p class="muted">Select a date to view events.</p>
+</div>
 </div>
 
   <div class="card">
@@ -5949,6 +5953,9 @@ async function renderStudyCalendar() {
     const number = document.createElement('div');
     number.textContent = day;
     cell.appendChild(number);
+   cell.style.cursor = 'pointer';
+
+cell.onclick = () => showStudyCalendarDay(day);
 
     if (eventDays.has(day)) {
       const dot = document.createElement('div');
@@ -5966,6 +5973,62 @@ function changeStudyCalendarMonth(change) {
   );
 
   renderStudyCalendar();
+}
+ async function showStudyCalendarDay(day) {
+  const details = document.getElementById('studyCalendarEventDetails');
+  if (!details) return;
+
+  const year = studyCalendarDate.getFullYear();
+  const month = studyCalendarDate.getMonth();
+
+  const start = new Date(year, month, day);
+  const end = new Date(year, month, day + 1);
+
+  details.replaceChildren();
+
+  const heading = document.createElement('h3');
+  heading.textContent = '📅 Events on ' + start.toLocaleDateString();
+  details.appendChild(heading);
+
+  const { data, error } = await db
+    .from('study_events')
+    .select('*')
+    .eq('is_published', true)
+    .gte('event_date', start.toISOString())
+    .lt('event_date', end.toISOString())
+    .order('event_date', { ascending: true });
+
+  if (error) {
+    details.textContent = 'Event loading error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    const message = document.createElement('p');
+    message.textContent = 'No events on this date.';
+    details.appendChild(message);
+    return;
+  }
+
+  data.forEach(event => {
+    const item = document.createElement('div');
+    item.className = 'listitem';
+
+    const title = document.createElement('h4');
+    title.textContent = event.title;
+
+    const description = document.createElement('p');
+    description.textContent = event.description || 'No description';
+
+    const type = document.createElement('p');
+    type.textContent = 'Type: ' + (event.event_type || 'Study');
+
+    const classInfo = document.createElement('p');
+    classInfo.textContent = 'Class: ' + (event.class_level || 'All');
+
+    item.append(title, description, type, classInfo);
+    details.appendChild(item);
+  });
 }
 </script>
  
