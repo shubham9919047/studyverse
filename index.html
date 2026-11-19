@@ -87,8 +87,8 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <div class="card stat">
       <div class="staticon">⚡</div>
       <div>
-        <strong>420</strong>
-        <small>Demo XP</small>
+       <strong id="dashboardXP">0</strong>
+<small>My Learning XP</small>
       </div>
     </div>
 
@@ -5561,6 +5561,34 @@ async function loadAdminRewards() {
     card.append(heading, message, language, date);
     container.appendChild(card);
   });
+}
+ async function loadDashboardXP() {
+  const xpElement = document.getElementById('dashboardXP');
+
+  if (!xpElement) return;
+
+  const { data: { user }, error: userError } =
+    await db.auth.getUser();
+
+  if (userError || !user) {
+    xpElement.textContent = '0';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('study_rewards')
+    .select('xp_points')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    xpElement.textContent = '0';
+    return;
+  }
+
+  xpElement.textContent = data
+    ? data.xp_points
+    : '0';
 }
 </script>
  
