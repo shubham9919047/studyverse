@@ -445,6 +445,44 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Support tickets will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📚 Subject & Course Manager</h3>
+  <p class="muted">Create and manage learning courses.</p>
+
+  <input id="courseTitle" class="field"
+    placeholder="Course title">
+
+  <input id="courseSubject" class="field"
+    placeholder="Subject (Physics, Maths...)">
+
+  <input id="courseClass" class="field"
+    placeholder="Class (e.g. 12)">
+
+  <input id="courseExam" class="field"
+    placeholder="Exam target (JEE, NEET...)">
+
+  <textarea id="courseDescription" class="field"
+    placeholder="Course description"></textarea>
+
+  <select id="courseAccess" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addStudyCourse()">
+    Add Course
+  </button>
+
+  <p id="courseAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyCourses()">
+    Load Courses
+  </button>
+
+  <div id="adminCourseList">
+    <p class="muted">Courses will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -1998,6 +2036,150 @@ async function loadContentAccess() {
     };
 
     card.append(title, student, message, statusInfo, select, updateBtn);
+    list.appendChild(card);
+  });
+}
+ async function addStudyCourse() {
+  const title = document.getElementById('courseTitle').value.trim();
+  const subject = document.getElementById('courseSubject').value.trim();
+  const classLevel = document.getElementById('courseClass').value.trim();
+  const exam = document.getElementById('courseExam').value.trim();
+  const description = document.getElementById('courseDescription').value.trim();
+  const access = document.getElementById('courseAccess').value;
+  const msg = document.getElementById('courseAdminMessage');
+
+  if (!title || !subject || !classLevel) {
+    msg.textContent = 'Title, subject and class are required.';
+    return;
+  }
+
+  msg.textContent = 'Saving course...';
+
+  const { error } = await db.from('study_courses').insert({
+    title,
+    subject,
+    class_level: classLevel,
+    exam_target: exam,
+    description,
+    access_level: access
+  });
+
+  if (error) {
+    msg.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  msg.textContent = 'Course added successfully!';
+
+  document.getElementById('courseTitle').value = '';
+  document.getElementById('courseSubject').value = '';
+  document.getElementById('courseClass').value = '';
+  document.getElementById('courseExam').value = '';
+  document.getElementById('courseDescription').value = '';
+
+  loadStudyCourses();
+}
+
+async function loadStudyCourses() {
+  const list = document.getElementById('adminCourseList');
+  const msg = document.getElementById('courseAdminMessage');
+
+  list.textContent = 'Loading courses...';
+
+  const { data, error } = await db
+    .from('study_courses')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No courses added yet.';
+    return;
+  }
+
+  data.forEach(course => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const title = document.createElement('h4');
+    title.textContent = course.title;
+
+    const details = document.createElement('p');
+    details.textContent =
+      'Subject: ' + course.subject +
+      ' | Class: ' + course.class_level +
+      ' | Exam: ' + (course.exam_target || 'N/A');
+
+    const description = document.createElement('p');
+    description.textContent = course.description || 'No description.';
+
+    const accessInfo = document.createElement('p');
+    accessInfo.textContent =
+      'Access: ' + course.access_level.toUpperCase() +
+      ' | Status: ' + (course.is_active ? 'Active' : 'Inactive');
+
+    const accessSelect = document.createElement('select');
+    accessSelect.className = 'field';
+
+    ['free', 'premium'].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value.toUpperCase();
+      option.selected = course.access_level === value;
+      accessSelect.appendChild(option);
+    });
+
+    const updateAccessBtn = document.createElement('button');
+    updateAccessBtn.className = 'action';
+    updateAccessBtn.textContent = 'Update Access';
+
+    updateAccessBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_courses')
+        .update({ access_level: accessSelect.value })
+        .eq('id', course.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Course access updated!';
+      loadStudyCourses();
+    };
+
+    const activeBtn = document.createElement('button');
+    activeBtn.className = 'action';
+    activeBtn.style.marginTop = '8px';
+    activeBtn.textContent = course.is_active
+      ? 'Deactivate Course'
+      : 'Activate Course';
+
+    activeBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_courses')
+        .update({ is_active: !course.is_active })
+        .eq('id', course.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Course status updated!';
+      loadStudyCourses();
+    };
+
+    card.append(title, details, description, accessInfo,
+      accessSelect, updateAccessBtn, activeBtn);
+
     list.appendChild(card);
   });
 }
