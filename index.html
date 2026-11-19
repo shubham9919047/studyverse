@@ -211,6 +211,18 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Membership list will appear here.</p>
   </div>
 </div>
+   <div class="card">
+  <h3>📊 Admin Analytics</h3>
+  <p class="muted">STUDYVERSE platform overview.</p>
+
+  <button class="action" onclick="loadAdminAnalytics()">
+    Load Analytics
+  </button>
+
+  <div id="adminAnalytics" style="margin-top:15px">
+    <p class="muted">Analytics will appear here.</p>
+  </div>
+</div>
     <div class="card">
   <h3>🌟 Motivation Manager</h3>
   <p class="muted">Create and publish motivation posts.</p>
@@ -1593,6 +1605,68 @@ async function toggleAnnouncementPublish(id, publish) {
   });
 
   message.textContent = "Students loaded: " + data.length;
+}
+ async function loadAdminAnalytics() {
+  const box = document.getElementById("adminAnalytics");
+  box.textContent = "Loading analytics...";
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    box.textContent = "Please login first.";
+    return;
+  }
+
+  const { data: profiles, error: profileError } = await db
+    .from("profiles")
+    .select("membership");
+
+  if (profileError) {
+    box.textContent = "Profile Error: " + profileError.message;
+    return;
+  }
+
+  const { data: questions, error: questionError } = await db
+    .from("quiz_questions")
+    .select("id");
+
+  if (questionError) {
+    box.textContent = "Quiz Error: " + questionError.message;
+    return;
+  }
+
+  const totalStudents = profiles.length;
+  const freeMembers = profiles.filter(
+    p => (p.membership || "free").toLowerCase() === "free"
+  ).length;
+  const premiumMembers = profiles.filter(
+    p => (p.membership || "free").toLowerCase() === "premium"
+  ).length;
+  const totalQuestions = questions.length;
+
+  box.innerHTML = "";
+
+  const stats = [
+    ["👨‍🎓 Total Students", totalStudents],
+    ["🆓 Free Members", freeMembers],
+    ["💎 Premium Members", premiumMembers],
+    ["📚 Total Questions", totalQuestions]
+  ];
+
+  stats.forEach(([label, value]) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const heading = document.createElement("h4");
+    heading.textContent = label;
+
+    const number = document.createElement("h2");
+    number.textContent = value;
+
+    card.append(heading, number);
+    box.appendChild(card);
+  });
 }
 </script>
  
