@@ -383,6 +383,40 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </button>
 </div>
   </div>
+  <div class="card">
+  <h3>🔐 Free/Premium Content Control</h3>
+  <p class="muted">Control access to learning content.</p>
+
+  <input id="contentName" class="field"
+    placeholder="Content name (e.g. JEE Mock Test 1)">
+
+  <select id="contentType" class="field">
+    <option value="Quiz">Quiz</option>
+    <option value="Notes">Notes</option>
+    <option value="Video">Video</option>
+    <option value="Mock Test">Mock Test</option>
+    <option value="Course">Course</option>
+  </select>
+
+  <select id="contentLevel" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addContentAccess()">
+    Add Content
+  </button>
+
+  <p id="contentAccessMessage" class="muted"></p>
+
+  <button class="action" onclick="loadContentAccess()">
+    Load Content List
+  </button>
+
+  <div id="adminContentAccessList">
+    <p class="muted">Content list will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -1666,6 +1700,129 @@ async function toggleAnnouncementPublish(id, publish) {
 
     card.append(heading, number);
     box.appendChild(card);
+  });
+}
+ async function addContentAccess() {
+  const name = document.getElementById('contentName').value.trim();
+  const type = document.getElementById('contentType').value;
+  const level = document.getElementById('contentLevel').value;
+  const msg = document.getElementById('contentAccessMessage');
+
+  if (!name) {
+    msg.textContent = 'Please enter content name.';
+    return;
+  }
+
+  msg.textContent = 'Saving...';
+
+  const { error } = await db.from('content_access').insert({
+    content_name: name,
+    content_type: type,
+    access_level: level
+  });
+
+  if (error) {
+    msg.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  msg.textContent = 'Content added successfully!';
+
+  document.getElementById('contentName').value = '';
+
+  loadContentAccess();
+}
+
+async function loadContentAccess() {
+  const list = document.getElementById('adminContentAccessList');
+  const msg = document.getElementById('contentAccessMessage');
+
+  list.textContent = 'Loading content...';
+
+  const { data, error } = await db
+    .from('content_access')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No content added yet.';
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const title = document.createElement('h4');
+    title.textContent = item.content_name;
+
+    const info = document.createElement('p');
+    info.textContent = item.content_type + ' | ' +
+      item.access_level.toUpperCase() + ' | ' +
+      (item.is_active ? 'Active' : 'Inactive');
+
+    const levelSelect = document.createElement('select');
+    levelSelect.className = 'field';
+
+    ['free', 'premium'].forEach(level => {
+      const option = document.createElement('option');
+      option.value = level;
+      option.textContent = level.toUpperCase();
+      option.selected = item.access_level === level;
+      levelSelect.appendChild(option);
+    });
+
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'action';
+    updateBtn.textContent = 'Update Access';
+
+    updateBtn.onclick = async () => {
+      const { error } = await db
+        .from('content_access')
+        .update({ access_level: levelSelect.value })
+        .eq('id', item.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Access updated!';
+      loadContentAccess();
+    };
+
+    const activeBtn = document.createElement('button');
+    activeBtn.className = 'action';
+    activeBtn.style.marginTop = '8px';
+    activeBtn.textContent = item.is_active
+      ? 'Deactivate Content'
+      : 'Activate Content';
+
+    activeBtn.onclick = async () => {
+      const { error } = await db
+        .from('content_access')
+        .update({ is_active: !item.is_active })
+        .eq('id', item.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Content status updated!';
+      loadContentAccess();
+    };
+
+    card.append(title, info, levelSelect, updateBtn, activeBtn);
+    list.appendChild(card);
   });
 }
 </script>
