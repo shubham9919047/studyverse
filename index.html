@@ -197,6 +197,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Student list will appear here.</p>
   </div>
 </div> 
+   <div class="card">
+  <h3>💎 Membership Manager</h3>
+  <p class="muted">Manage student Free and Premium membership.</p>
+
+  <button class="action" onclick="loadMembershipStudents()">
+    Load Memberships
+  </button>
+
+  <p id="membershipAdminMessage" class="muted"></p>
+
+  <div id="adminMembershipList">
+    <p class="muted">Membership list will appear here.</p>
+  </div>
+</div>
     <div class="card">
   <h3>🌟 Motivation Manager</h3>
   <p class="muted">Create and publish motivation posts.</p>
@@ -1487,6 +1501,94 @@ async function toggleAnnouncementPublish(id, publish) {
     membership.textContent = "Membership: " + (student.membership || "Free");
 
     card.append(name, classInfo, exam, membership);
+    list.appendChild(card);
+  });
+
+  message.textContent = "Students loaded: " + data.length;
+}
+ async function loadMembershipStudents() {
+  const list = document.getElementById("adminMembershipList");
+  const message = document.getElementById("membershipAdminMessage");
+
+  message.textContent = "Loading memberships...";
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("profiles")
+    .select("id, full_name, class_level, membership")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    message.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No students found.";
+    message.textContent = "";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(student => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const name = document.createElement("h4");
+    name.textContent = student.full_name || "Unnamed Student";
+
+    const classInfo = document.createElement("p");
+    classInfo.textContent = "Class: " + (student.class_level || "Not set");
+
+    const label = document.createElement("label");
+    label.textContent = "Membership: ";
+
+    const select = document.createElement("select");
+    select.className = "field";
+
+    ["free", "premium"].forEach(level => {
+      const option = document.createElement("option");
+      option.value = level;
+      option.textContent = level === "free" ? "Free" : "Premium";
+      select.appendChild(option);
+    });
+
+    select.value = (student.membership || "free").toLowerCase();
+
+    const button = document.createElement("button");
+    button.className = "action";
+    button.textContent = "Update Membership";
+
+    button.onclick = async () => {
+      button.disabled = true;
+      button.textContent = "Updating...";
+
+      const { error: updateError } = await db
+        .from("profiles")
+        .update({ membership: select.value })
+        .eq("id", student.id);
+
+      if (updateError) {
+        alert("Update Error: " + updateError.message);
+        button.disabled = false;
+        button.textContent = "Update Membership";
+        return;
+      }
+
+      alert("Membership updated successfully!");
+      button.disabled = false;
+      button.textContent = "Update Membership";
+    };
+
+    card.append(name, classInfo, label, select, button);
     list.appendChild(card);
   });
 
