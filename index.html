@@ -831,6 +831,35 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Events will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>🏆 Leaderboard Manager</h3>
+
+  <label class="sub">Student User ID</label>
+  <input
+    id="leaderboardUserId"
+    class="field"
+    placeholder="Enter student UUID"
+  >
+
+  <label class="sub">Points / XP</label>
+  <input
+    id="leaderboardPoints"
+    class="field"
+    type="number"
+    min="0"
+    placeholder="Enter points"
+  >
+
+  <button class="action" onclick="setStudentPoints()">
+    Save Student Points
+  </button>
+
+  <button class="action" onclick="loadAdminLeaderboard()">
+    Load Leaderboard
+  </button>
+
+  <div id="adminLeaderboardList"></div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -3805,6 +3834,102 @@ document.getElementById('studytracker')
     if (e.target.closest('button')) return;
     loadStudyTracker();
   });
+   async function setStudentPoints() {
+  const userId = document.getElementById('leaderboardUserId').value.trim();
+  const points = Number(document.getElementById('leaderboardPoints').value);
+  const list = document.getElementById('adminLeaderboardList');
+
+  if (!userId || !Number.isInteger(points) || points < 0) {
+    list.textContent = 'Enter a valid student ID and points.';
+    return;
+  }
+
+  list.textContent = 'Saving points...';
+
+  const { error } = await db
+    .from('study_points')
+    .upsert({
+      user_id: userId,
+      points: points,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id'
+    });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.textContent = 'Points saved successfully!';
+  await loadAdminLeaderboard();
+}
+
+async function loadAdminLeaderboard() {
+  const list = document.getElementById('adminLeaderboardList');
+  list.textContent = 'Loading leaderboard...';
+
+  const { data: pointsData, error } = await db
+    .from('study_points')
+    .select('user_id,points')
+    .order('points', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  const pointsRecords = pointsData || [];
+
+  if (pointsRecords.length === 0) {
+    list.textContent = 'No leaderboard records found.';
+    return;
+  }
+
+  const ids = pointsRecords.map(r => r.user_id);
+
+  const { data: profiles, error: profileError } = await db
+    .from('profiles')
+    .select('id,full_name,class_level')
+    .in('id', ids);
+
+  if (profileError) {
+    list.textContent = 'Profile error: ' + profileError.message;
+    return;
+  }
+
+  const profileMap = new Map(
+    (profiles || []).map(p => [p.id, p])
+  );
+
+  list.textContent = '';
+
+  pointsRecords.forEach((record, index) => {
+    const profile = profileMap.get(record.user_id);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const rank = document.createElement('h4');
+    rank.textContent = '#' + (index + 1);
+
+    const name = document.createElement('p');
+    name.textContent = profile
+      ? profile.full_name || 'Student'
+      : 'Student';
+
+    const classText = document.createElement('p');
+    classText.textContent = profile
+      ? 'Class ' + (profile.class_level || 'N/A')
+      : '';
+
+    const xp = document.createElement('p');
+    xp.textContent = record.points + ' XP';
+
+    card.append(rank, name, classText, xp);
+    list.appendChild(card);
+  });
+}
 </script>
  
 <!-- END SUPABASE CONNECTION -->
