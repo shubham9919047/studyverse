@@ -83,7 +83,27 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
    </div>
   </div>
  </section>
- <section id="classes" class="page"><div class="sectionhead"><h3>Choose your learning track</h3><span class="sub">Demo catalogue</span></div><div class="grid three" id="trackGrid"></div></section>
+ <section id="classes" class="page">
+  <div class="sectionhead">
+    <h3>Choose your learning track</h3>
+    <span class="sub">Explore your learning journey</span>
+  </div>
+
+  <div class="grid three" id="trackGrid"></div>
+
+  <div class="sectionhead" style="margin-top:24px">
+    <h3>📚 Course Learning Portal</h3>
+    <span class="sub">Courses added by Studyverse</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadStudentCoursePortal()">
+      Load Available Courses
+    </button>
+
+    <div id="studentCoursePortalList"></div>
+  </div>
+</section>
  <section id="practice" class="page"><div class="sectionhead"><h3>Daily practice zone</h3><span class="tag">Sample quiz</span></div><div class="card"><div class="eyebrow">PHYSICS · CLASS 11–12</div><h3 id="qtext">A body starts from rest and moves with uniform acceleration. Which equation gives its velocity after time t?</h3><div id="opts"></div><div id="feedback" class="muted"></div><div id="quizStats" class="muted">Attempted: 0 | Correct: 0 | Accuracy: 0%</div><button class="action" onclick="nextQ()">Next question ↗</button></div><p class="sub">Questions shown here are illustrative demo content, not an official PYQ archive.</p></section>
  <section id="studentquiz" class="page">
   <div class="sectionhead">
@@ -4537,6 +4557,57 @@ async function submitMockTest(autoSubmit) {
   area.append(heading, result, message);
 
   mockTestAttemptId = null;
+}
+ async function loadStudentCoursePortal() {
+  const container = document.getElementById('studentCoursePortalList');
+  if (!container) return;
+
+  container.textContent = 'Loading courses...';
+
+  const { data, error } = await db
+    .from('study_courses')
+    .select('id,title,subject,class_level,exam_target,description,access_level')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Course loading error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No courses available yet.';
+    return;
+  }
+
+  data.forEach(course => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = course.title || 'Untitled Course';
+
+    const details = document.createElement('p');
+    details.className = 'sub';
+    details.textContent =
+      (course.subject || 'Subject not specified') +
+      ' | Class ' + (course.class_level || 'N/A') +
+      ' | ' + (course.exam_target || 'General');
+
+    const description = document.createElement('p');
+    description.textContent = course.description || 'No description available.';
+
+    const access = document.createElement('p');
+    access.className = 'sub';
+    access.textContent =
+      'Access: ' + (course.access_level || 'free').toUpperCase();
+
+    card.append(heading, details, description, access);
+    container.appendChild(card);
+  });
 }
 </script>
  
