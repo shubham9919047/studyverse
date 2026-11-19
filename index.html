@@ -1039,6 +1039,34 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 
   <div id="adminLeaderboardList"></div>
 </div>
+  <div class="card">
+  <h3>🏆 Rewards & XP Manager</h3>
+  <p class="muted">Manage student XP and levels.</p>
+
+  <input id="rewardStudentId" class="field"
+    placeholder="Student User ID">
+
+  <input id="rewardXP" class="field"
+    type="number" placeholder="XP Points">
+
+  <input id="rewardLevel" class="field"
+    type="number" placeholder="Level">
+
+  <textarea id="rewardBadges" class="field"
+    placeholder="Badges (comma separated)"></textarea>
+
+  <button class="action" onclick="saveStudentReward()">
+    Save Rewards
+  </button>
+
+  <p id="rewardAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadAdminRewards()">
+    Load Rewards
+  </button>
+
+  <div id="adminRewardList"></div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -5126,6 +5154,93 @@ async function loadMyDoubts() {
       (doubt.admin_reply || 'Awaiting reply');
 
     card.append(heading, details, question, status, reply);
+    container.appendChild(card);
+  });
+}
+ async function saveStudentReward() {
+  const userId = document.getElementById('rewardStudentId').value.trim();
+  const xp = Number(document.getElementById('rewardXP').value);
+  const level = Number(document.getElementById('rewardLevel').value);
+  const badgeText = document.getElementById('rewardBadges').value.trim();
+  const message = document.getElementById('rewardAdminMessage');
+
+  if (!userId || !Number.isInteger(xp) || !Number.isInteger(level)) {
+    message.textContent = 'Enter valid Student ID, XP and Level.';
+    return;
+  }
+
+  if (xp < 0 || level < 1) {
+    message.textContent = 'XP cannot be negative and Level must be at least 1.';
+    return;
+  }
+
+  const badges = badgeText
+    ? badgeText.split(',').map(b => b.trim()).filter(Boolean)
+    : [];
+
+  message.textContent = 'Saving rewards...';
+
+  const { error } = await db
+    .from('study_rewards')
+    .upsert({
+      user_id: userId,
+      xp_points: xp,
+      level: level,
+      badges: badges,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+  if (error) {
+    message.textContent = 'Save error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Rewards saved successfully!';
+  await loadAdminRewards();
+}
+
+async function loadAdminRewards() {
+  const container = document.getElementById('adminRewardList');
+  container.textContent = 'Loading rewards...';
+
+  const { data, error } = await db
+    .from('study_rewards')
+    .select('user_id,xp_points,level,badges,updated_at')
+    .order('xp_points', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Loading error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No rewards records found.';
+    return;
+  }
+
+  data.forEach(reward => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h4');
+    heading.textContent = 'Student ID: ' + reward.user_id;
+
+    const xp = document.createElement('p');
+    xp.textContent = 'XP: ' + reward.xp_points;
+
+    const level = document.createElement('p');
+    level.textContent = 'Level: ' + reward.level;
+
+    const badges = document.createElement('p');
+    badges.textContent = 'Badges: ' +
+      (Array.isArray(reward.badges) && reward.badges.length
+        ? reward.badges.join(', ')
+        : 'None');
+
+    card.append(heading, xp, level, badges);
     container.appendChild(card);
   });
 }
