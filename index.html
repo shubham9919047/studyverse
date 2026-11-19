@@ -645,6 +645,38 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Questions will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📚 Assignment Manager</h3>
+  <p class="muted">Create and manage student assignments.</p>
+
+  <input id="assignmentTitle" class="field" placeholder="Assignment title">
+
+  <textarea id="assignmentDescription" class="field" placeholder="Assignment description"></textarea>
+
+  <input id="assignmentSubject" class="field" placeholder="Subject">
+
+  <input id="assignmentClass" class="field" placeholder="Class">
+
+  <input id="assignmentExam" class="field" placeholder="Exam target (JEE, NEET...)">
+
+  <label for="assignmentDueDate">Deadline</label>
+  <input id="assignmentDueDate" class="field" type="datetime-local">
+
+  <select id="assignmentAccess" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addStudyAssignment()">Create Assignment</button>
+
+  <p id="assignmentAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyAssignments()">Load Assignments</button>
+
+  <div id="adminAssignmentList">
+    <p class="muted">Assignments will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -2806,6 +2838,187 @@ document.getElementById('questionTestSelect')
   ?.addEventListener('change', loadTestQuestions);
 
 loadTestSelect();
+ async function addStudyAssignment() {
+  const title = document.getElementById('assignmentTitle').value.trim();
+  const description = document.getElementById('assignmentDescription').value.trim();
+  const subject = document.getElementById('assignmentSubject').value.trim();
+  const classLevel = document.getElementById('assignmentClass').value.trim();
+  const examTarget = document.getElementById('assignmentExam').value.trim();
+  const dueInput = document.getElementById('assignmentDueDate').value;
+  const accessLevel = document.getElementById('assignmentAccess').value;
+  const message = document.getElementById('assignmentAdminMessage');
+
+  if (!title) {
+    message.textContent = 'Assignment title is required.';
+    return;
+  }
+
+  message.textContent = 'Creating assignment...';
+
+  const { error } = await db.from('study_assignments').insert([{
+    title,
+    description,
+    subject,
+    class_level: classLevel,
+    exam_target: examTarget,
+    due_date: dueInput ? new Date(dueInput).toISOString() : null,
+    access_level: accessLevel
+  }]);
+
+  if (error) {
+    message.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Assignment created successfully!';
+
+  document.getElementById('assignmentTitle').value = '';
+  document.getElementById('assignmentDescription').value = '';
+  document.getElementById('assignmentSubject').value = '';
+  document.getElementById('assignmentClass').value = '';
+  document.getElementById('assignmentExam').value = '';
+  document.getElementById('assignmentDueDate').value = '';
+
+  loadStudyAssignments();
+}
+
+async function loadStudyAssignments() {
+  const list = document.getElementById('adminAssignmentList');
+  list.replaceChildren();
+
+  const { data, error } = await db
+    .from('study_assignments')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No assignments created yet.';
+    return;
+  }
+
+  data.forEach(assignment => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h4');
+    heading.textContent = assignment.title;
+    card.appendChild(heading);
+
+    const details = document.createElement('p');
+    details.textContent =
+      'Subject: ' + (assignment.subject || 'N/A') +
+      ' | Class: ' + (assignment.class_level || 'N/A') +
+      ' | Exam: ' + (assignment.exam_target || 'N/A');
+    card.appendChild(details);
+
+    const description = document.createElement('p');
+    description.textContent = assignment.description || 'No description';
+    card.appendChild(description);
+
+    const deadline = document.createElement('p');
+    deadline.textContent = assignment.due_date
+      ? 'Deadline: ' + new Date(assignment.due_date).toLocaleString()
+      : 'No deadline';
+    card.appendChild(deadline);
+
+    const access = document.createElement('p');
+    access.textContent = 'Access: ' + assignment.access_level;
+    card.appendChild(access);
+
+    const status = document.createElement('p');
+    status.textContent = 'Status: ' +
+      (assignment.is_published ? 'Published' : 'Unpublished');
+    card.appendChild(status);
+
+    const accessButton = document.createElement('button');
+    accessButton.className = 'action';
+    accessButton.textContent = 'Change to ' +
+      (assignment.access_level === 'free' ? 'Premium' : 'Free');
+
+    accessButton.onclick = () =>
+      updateAssignmentAccess(
+        assignment.id,
+        assignment.access_level === 'free' ? 'premium' : 'free'
+      );
+
+    card.appendChild(accessButton);
+
+    const publishButton = document.createElement('button');
+    publishButton.className = 'action';
+    publishButton.textContent = assignment.is_published
+      ? 'Unpublish'
+      : 'Publish';
+
+    publishButton.onclick = () =>
+      toggleAssignmentPublish(assignment.id, !assignment.is_published);
+
+    card.appendChild(publishButton);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'action';
+    deleteButton.textContent = 'Delete Assignment';
+
+    deleteButton.onclick = () => deleteStudyAssignment(assignment.id);
+
+    card.appendChild(deleteButton);
+    list.appendChild(card);
+  });
+}
+
+async function updateAssignmentAccess(id, level) {
+  const { error } = await db
+    .from('study_assignments')
+    .update({ access_level: level })
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('assignmentAdminMessage').textContent =
+      'Error: ' + error.message;
+    return;
+  }
+
+  loadStudyAssignments();
+}
+
+async function toggleAssignmentPublish(id, publish) {
+  const { error } = await db
+    .from('study_assignments')
+    .update({ is_published: publish })
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('assignmentAdminMessage').textContent =
+      'Error: ' + error.message;
+    return;
+  }
+
+  loadStudyAssignments();
+}
+
+async function deleteStudyAssignment(id) {
+  if (!confirm('Delete this assignment?')) return;
+
+  const { error } = await db
+    .from('study_assignments')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('assignmentAdminMessage').textContent =
+      'Delete error: ' + error.message;
+    return;
+  }
+
+  document.getElementById('assignmentAdminMessage').textContent =
+    'Assignment deleted successfully!';
+
+  loadStudyAssignments();
+}
 </script>
  
 <!-- END SUPABASE CONNECTION -->
