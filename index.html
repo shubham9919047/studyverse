@@ -715,6 +715,47 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </div>
 </div>
   <div class="card">
+  <h3>🎥 Video Lecture Manager</h3>
+  <p class="muted">Add and manage video lectures.</p>
+
+  <input id="videoLectureTitle" class="field"
+    placeholder="Video title">
+
+  <input id="videoLectureSubject" class="field"
+    placeholder="Subject">
+
+  <input id="videoLectureClass" class="field"
+    placeholder="Class (e.g. 12)">
+
+  <input id="videoLectureChapter" class="field"
+    placeholder="Chapter name">
+
+  <textarea id="videoLectureDescription" class="field"
+    placeholder="Video description"></textarea>
+
+  <input id="videoLectureUrl" class="field"
+    placeholder="YouTube video URL">
+
+  <select id="videoLectureAccess" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addVideoLecture()">
+    Add Video Lecture
+  </button>
+
+  <p id="videoLectureAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadAdminVideoLectures()">
+    Load Video Lectures
+  </button>
+
+  <div id="adminVideoLectureList">
+    <p class="muted">Videos will appear here.</p>
+  </div>
+</div>
+  <div class="card">
   <h3>📝 PYQ Manager</h3>
   <p class="muted">Manage Previous Year Questions.</p>
 
@@ -4608,6 +4649,120 @@ async function submitMockTest(autoSubmit) {
     card.append(heading, details, description, access);
     container.appendChild(card);
   });
+}
+ async function addVideoLecture() {
+  const title = document.getElementById('videoLectureTitle').value.trim();
+  const subject = document.getElementById('videoLectureSubject').value.trim();
+  const classLevel = document.getElementById('videoLectureClass').value.trim();
+  const chapter = document.getElementById('videoLectureChapter').value.trim();
+  const description = document.getElementById('videoLectureDescription').value.trim();
+  const videoUrl = document.getElementById('videoLectureUrl').value.trim();
+  const access = document.getElementById('videoLectureAccess').value;
+  const message = document.getElementById('videoLectureAdminMessage');
+
+  if (!title || !videoUrl) {
+    message.textContent = 'Video title and URL are required.';
+    return;
+  }
+
+  try {
+    const { error } = await db
+      .from('study_video_lectures')
+      .insert([{
+        title,
+        subject,
+        class_level: classLevel,
+        chapter,
+        description,
+        video_url: videoUrl,
+        access_level: access
+      }]);
+
+    if (error) {
+      message.textContent = 'Error: ' + error.message;
+      return;
+    }
+
+    message.textContent = 'Video lecture added successfully!';
+
+    document.getElementById('videoLectureTitle').value = '';
+    document.getElementById('videoLectureSubject').value = '';
+    document.getElementById('videoLectureClass').value = '';
+    document.getElementById('videoLectureChapter').value = '';
+    document.getElementById('videoLectureDescription').value = '';
+    document.getElementById('videoLectureUrl').value = '';
+
+    await loadAdminVideoLectures();
+  } catch (err) {
+    message.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function loadAdminVideoLectures() {
+  const container = document.getElementById('adminVideoLectureList');
+  container.textContent = 'Loading video lectures...';
+
+  const { data, error } = await db
+    .from('study_video_lectures')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Loading error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No video lectures added yet.';
+    return;
+  }
+
+  data.forEach(video => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h4');
+    heading.textContent = video.title;
+
+    const details = document.createElement('p');
+    details.className = 'muted';
+    details.textContent =
+      (video.subject || 'Subject N/A') +
+      ' | Class ' + (video.class_level || 'N/A') +
+      ' | ' + (video.chapter || 'Chapter N/A');
+
+    const access = document.createElement('p');
+    access.className = 'muted';
+    access.textContent = 'Access: ' + video.access_level.toUpperCase();
+
+    const status = document.createElement('p');
+    status.textContent = video.is_published ? 'Published' : 'Unpublished';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'action';
+    toggle.textContent = video.is_published ? 'Unpublish' : 'Publish';
+    toggle.onclick = () => toggleVideoLecturePublish(video.id, !video.is_published);
+
+    card.append(heading, details, access, status, toggle);
+    container.appendChild(card);
+  });
+}
+
+async function toggleVideoLecturePublish(id, publish) {
+  const { error } = await db
+    .from('study_video_lectures')
+    .update({ is_published: publish })
+    .eq('id', id);
+
+  if (error) {
+    alert('Update error: ' + error.message);
+    return;
+  }
+
+  await loadAdminVideoLectures();
 }
 </script>
  
