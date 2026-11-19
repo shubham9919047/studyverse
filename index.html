@@ -650,6 +650,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </div>
 </div>
   <div class="card">
+  <h3>💬 Doubt Solving Manager</h3>
+  <p class="muted">View student doubts and provide replies.</p>
+
+  <button class="action" onclick="loadAdminDoubts()">
+    Load Student Doubts
+  </button>
+
+  <p id="doubtAdminMessage" class="muted"></p>
+
+  <div id="adminDoubtList">
+    <p class="muted">Student doubts will appear here.</p>
+  </div>
+</div>
+  <div class="card">
   <h3>📚 Subject & Course Manager</h3>
   <p class="muted">Create and manage learning courses.</p>
 
@@ -4851,6 +4865,112 @@ async function toggleVideoLecturePublish(id, publish) {
     };
 
     card.append(heading, details, description, access, watchButton);
+    container.appendChild(card);
+  });
+}
+ async function loadAdminDoubts() {
+  const container = document.getElementById('adminDoubtList');
+  const message = document.getElementById('doubtAdminMessage');
+
+  container.textContent = 'Loading student doubts...';
+  message.textContent = '';
+
+  const { data, error } = await db
+    .from('study_doubts')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No student doubts found.';
+    return;
+  }
+
+  data.forEach(doubt => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = doubt.student_name || 'Student';
+
+    const details = document.createElement('p');
+    details.className = 'muted';
+    details.textContent =
+      (doubt.subject || 'Subject') +
+      ' | Class ' + (doubt.class_level || 'N/A') +
+      ' | ' + (doubt.chapter || 'Chapter N/A');
+
+    const question = document.createElement('p');
+    question.textContent = doubt.doubt_message;
+
+    const replyLabel = document.createElement('label');
+    replyLabel.textContent = 'Admin Reply';
+
+    const reply = document.createElement('textarea');
+    reply.className = 'field';
+    reply.value = doubt.admin_reply || '';
+    reply.placeholder = 'Write your reply here...';
+
+    const statusLabel = document.createElement('label');
+    statusLabel.textContent = 'Status';
+
+    const status = document.createElement('select');
+    status.className = 'field';
+
+    ['Pending', 'Answered', 'Resolved'].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      status.appendChild(option);
+    });
+
+    status.value = doubt.status || 'Pending';
+
+    const save = document.createElement('button');
+    save.className = 'action';
+    save.textContent = 'Save Reply & Status';
+
+    save.onclick = async () => {
+      save.disabled = true;
+      save.textContent = 'Saving...';
+
+      const { error: updateError } = await db
+        .from('study_doubts')
+        .update({
+          admin_reply: reply.value.trim(),
+          status: status.value
+        })
+        .eq('id', doubt.id);
+
+      if (updateError) {
+        message.textContent = 'Save error: ' + updateError.message;
+        save.disabled = false;
+        save.textContent = 'Save Reply & Status';
+        return;
+      }
+
+      message.textContent = 'Reply and status saved.';
+      await loadAdminDoubts();
+    };
+
+    card.append(
+      heading,
+      details,
+      question,
+      replyLabel,
+      reply,
+      statusLabel,
+      status,
+      save
+    );
+
     container.appendChild(card);
   });
 }
