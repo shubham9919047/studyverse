@@ -567,6 +567,84 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">PYQs will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>🧪 Test & Mock Test Manager</h3>
+  <p class="muted">Create and manage mock tests.</p>
+
+  <input id="testTitle" class="field"
+    placeholder="Test title">
+
+  <input id="testExam" class="field"
+    placeholder="Exam name (JEE, NEET...)">
+
+  <input id="testClass" class="field"
+    placeholder="Class">
+
+  <input id="testSubject" class="field"
+    placeholder="Subject">
+
+  <input id="testDuration" class="field"
+    type="number" placeholder="Duration (minutes)">
+
+  <input id="testMarks" class="field"
+    type="number" placeholder="Total marks">
+
+  <select id="testAccess" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addStudyTest()">
+    Create Test
+  </button>
+
+  <p id="testAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyTests()">
+    Load Tests
+  </button>
+
+  <div id="adminTestList">
+    <p class="muted">Tests will appear here.</p>
+  </div>
+</div>
+  <div class="card">
+  <h3>📝 Test Question Manager</h3>
+  <p class="muted">Add questions to your created tests.</p>
+
+  <select id="questionTestSelect" class="field">
+    <option value="">Select a test</option>
+  </select>
+
+  <textarea id="testQuestionText" class="field" placeholder="Write question"></textarea>
+
+  <input id="testOptionA" class="field" placeholder="Option A">
+  <input id="testOptionB" class="field" placeholder="Option B">
+  <input id="testOptionC" class="field" placeholder="Option C">
+  <input id="testOptionD" class="field" placeholder="Option D">
+
+  <select id="testCorrectOption" class="field">
+    <option value="">Select correct answer</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
+  </select>
+
+  <textarea id="testQuestionExplanation" class="field" placeholder="Explanation"></textarea>
+
+  <input id="testQuestionMarks" class="field" type="number" value="1" placeholder="Marks">
+
+  <button class="action" onclick="addTestQuestion()">Add Question</button>
+
+  <p id="testQuestionMessage" class="muted"></p>
+
+  <button class="action" onclick="loadTestQuestions()">Load Questions</button>
+
+  <div id="testQuestionList">
+    <p class="muted">Questions will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -2558,6 +2636,176 @@ async function loadStudyPYQs() {
     list.appendChild(card);
   });
 }
+ async function loadTestSelect() {
+  const select = document.getElementById('questionTestSelect');
+  if (!select) return;
+
+  const { data, error } = await db
+    .from('study_tests')
+    .select('id, title')
+    .order('id', { ascending: false });
+
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  select.replaceChildren();
+
+  const first = document.createElement('option');
+  first.value = '';
+  first.textContent = 'Select a test';
+  select.appendChild(first);
+
+  (data || []).forEach(test => {
+    const option = document.createElement('option');
+    option.value = test.id;
+    option.textContent = test.title;
+    select.appendChild(option);
+  });
+}
+
+async function addTestQuestion() {
+  const testId = document.getElementById('questionTestSelect').value;
+  const question = document.getElementById('testQuestionText').value.trim();
+  const a = document.getElementById('testOptionA').value.trim();
+  const b = document.getElementById('testOptionB').value.trim();
+  const c = document.getElementById('testOptionC').value.trim();
+  const d = document.getElementById('testOptionD').value.trim();
+  const correct = document.getElementById('testCorrectOption').value;
+  const explanation = document.getElementById('testQuestionExplanation').value.trim();
+  const marks = Number(document.getElementById('testQuestionMarks').value);
+  const message = document.getElementById('testQuestionMessage');
+
+  if (!testId || !question || !a || !b || !c || !d || !correct || !Number.isInteger(marks) || marks < 1) {
+    message.textContent = 'Please fill all required fields and select a test.';
+    return;
+  }
+
+  message.textContent = 'Adding question...';
+
+  const { error } = await db.from('study_test_questions').insert([{
+    test_id: Number(testId),
+    question,
+    option_a: a,
+    option_b: b,
+    option_c: c,
+    option_d: d,
+    correct_option: correct,
+    explanation,
+    marks
+  }]);
+
+  if (error) {
+    message.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Question added successfully!';
+
+  document.getElementById('testQuestionText').value = '';
+  document.getElementById('testOptionA').value = '';
+  document.getElementById('testOptionB').value = '';
+  document.getElementById('testOptionC').value = '';
+  document.getElementById('testOptionD').value = '';
+  document.getElementById('testCorrectOption').value = '';
+  document.getElementById('testQuestionExplanation').value = '';
+  document.getElementById('testQuestionMarks').value = '1';
+
+  loadTestQuestions();
+}
+
+async function loadTestQuestions() {
+  const testId = document.getElementById('questionTestSelect').value;
+  const list = document.getElementById('testQuestionList');
+
+  list.replaceChildren();
+
+  if (!testId) {
+    list.textContent = 'Please select a test first.';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('study_test_questions')
+    .select('*')
+    .eq('test_id', Number(testId))
+    .order('id', { ascending: true });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No questions added yet.';
+    return;
+  }
+
+  data.forEach((q, index) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h4');
+    heading.textContent = 'Question ' + (index + 1);
+    card.appendChild(heading);
+
+    const questionText = document.createElement('p');
+    questionText.textContent = q.question;
+    card.appendChild(questionText);
+
+    ['A', 'B', 'C', 'D'].forEach(letter => {
+      const optionText = document.createElement('p');
+      optionText.textContent = letter + ': ' + q['option_' + letter.toLowerCase()];
+      card.appendChild(optionText);
+    });
+
+    const answer = document.createElement('p');
+    answer.textContent = 'Correct answer: ' + q.correct_option;
+    card.appendChild(answer);
+
+    const explanation = document.createElement('p');
+    explanation.textContent = 'Explanation: ' + (q.explanation || 'None');
+    card.appendChild(explanation);
+
+    const marks = document.createElement('p');
+    marks.textContent = 'Marks: ' + q.marks;
+    card.appendChild(marks);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'action';
+    deleteButton.textContent = 'Delete Question';
+    deleteButton.onclick = () => deleteTestQuestion(q.id);
+
+    card.appendChild(deleteButton);
+    list.appendChild(card);
+  });
+}
+
+async function deleteTestQuestion(id) {
+  if (!confirm('Delete this question?')) return;
+
+  const { error } = await db
+    .from('study_test_questions')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('testQuestionMessage').textContent =
+      'Delete error: ' + error.message;
+    return;
+  }
+
+  document.getElementById('testQuestionMessage').textContent =
+    'Question deleted successfully!';
+
+  loadTestQuestions();
+}
+
+document.getElementById('questionTestSelect')
+  ?.addEventListener('change', loadTestQuestions);
+
+loadTestSelect();
 </script>
  
 <!-- END SUPABASE CONNECTION -->
