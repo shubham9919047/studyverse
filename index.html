@@ -184,9 +184,36 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
 
     <div class="card">
-      <h3>🌟 Motivation Manager</h3>
-      <p class="muted">Publish motivation content.</p>
-    </div>
+  <h3>🌟 Motivation Manager</h3>
+  <p class="muted">Create and publish motivation posts.</p>
+
+  <input id="motivationTitle" class="field"
+    placeholder="Motivation title">
+
+  <textarea id="motivationContent" class="field"
+    placeholder="Write motivation message"></textarea>
+
+  <select id="motivationLanguage" class="field">
+    <option value="Hindi">Hindi</option>
+    <option value="English">English</option>
+  </select>
+
+  <button class="action" onclick="addMotivationPost()">
+    Save Motivation
+  </button>
+
+  <p id="motivationAdminMessage" class="muted"></p>
+
+  <h3>📋 Motivation Posts</h3>
+
+  <div id="adminMotivationList">
+    <p class="muted">Posts will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminMotivation()">
+    Refresh Posts
+  </button>
+</div>
 
     <div class="card">
       <h3>💡 Thought Manager</h3>
@@ -539,6 +566,7 @@ async function editProfile() {
   adminButton.style.display = data ? 'flex' : 'none';
   if (data) {
   loadAdminQuestions();
+  loadAdminMotivation();
 }
 }
  async function logout() {
@@ -679,6 +707,109 @@ async function toggleQuestionPublish(id, publish) {
   }
 
   await loadAdminQuestions();
+}
+ async function addMotivationPost() {
+  const message = document.getElementById("motivationAdminMessage");
+
+  const title = document.getElementById("motivationTitle").value.trim();
+  const content = document.getElementById("motivationContent").value.trim();
+  const language = document.getElementById("motivationLanguage").value;
+
+  if (!title || !content) {
+    message.textContent = "Please enter title and content.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  message.textContent = "Saving motivation...";
+
+  const { error } = await db.from("motivation_posts").insert({
+    title: title,
+    content: content,
+    language: language,
+    is_published: false
+  });
+
+  if (error) {
+    message.textContent = "Save Error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Motivation saved successfully!";
+
+  document.getElementById("motivationTitle").value = "";
+  document.getElementById("motivationContent").value = "";
+
+  await loadAdminMotivation();
+}
+
+
+async function loadAdminMotivation() {
+  const list = document.getElementById("adminMotivationList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("motivation_posts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No motivation posts added yet.";
+    return;
+  }
+
+  list.innerHTML = data.map(post => `
+    <div class="card" style="margin-top:12px">
+      <h4>${post.title}</h4>
+      <p>${post.content}</p>
+      <p>Language: ${post.language}</p>
+      <p>Status: ${post.is_published ? "Published" : "Draft"}</p>
+
+      <button class="action"
+        onclick="toggleMotivationPublish(${post.id}, ${!post.is_published})">
+        ${post.is_published ? "Unpublish" : "Publish"}
+      </button>
+    </div>
+  `).join("");
+}
+
+
+async function toggleMotivationPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("motivation_posts")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminMotivation();
 }
 </script>
  
