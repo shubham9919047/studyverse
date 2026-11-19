@@ -255,6 +255,52 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </div>
 
 </section>
+ <section id="studentgoals" class="page">
+
+  <div class="sectionhead">
+    <h3>🎯 My Daily Study Goals</h3>
+    <span class="sub">Plan your daily learning</span>
+  </div>
+
+  <div class="card">
+
+    <h3>➕ Create Study Goal</h3>
+
+    <input
+      id="goalSubject"
+      class="field"
+      placeholder="Subject (Physics, Maths, Chemistry)"
+    >
+
+    <input
+      id="goalMinutes"
+      class="field"
+      type="number"
+      min="1"
+      placeholder="Target minutes"
+    >
+
+    <button class="action" onclick="addDailyGoal()">
+      Add Daily Goal
+    </button>
+
+    <p id="goalMessage" class="muted"></p>
+
+  </div>
+
+  <div class="card">
+
+    <h3>📅 Today's Goals</h3>
+
+    <button class="action" onclick="loadDailyGoals()">
+      Load My Goals
+    </button>
+
+    <div id="dailyGoalsList"></div>
+
+  </div>
+
+</section>
  <section id="classes" class="page">
   <div class="sectionhead">
     <h3>Choose your learning track</h3>
@@ -5621,6 +5667,133 @@ async function loadAdminRewards() {
   }
 
   streakElement.textContent = data.current_streak || 0;
+}
+ async function addDailyGoal() {
+  const subject = document.getElementById('goalSubject').value.trim();
+  const minutes = Number(document.getElementById('goalMinutes').value);
+  const message = document.getElementById('goalMessage');
+
+  if (!subject || !Number.isInteger(minutes) || minutes <= 0) {
+    message.textContent = 'Enter a subject and valid target minutes.';
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = 'Please login first.';
+    return;
+  }
+
+  const { error } = await db.from('study_daily_goals').insert({
+    user_id: user.id,
+    subject: subject,
+    target_minutes: minutes
+  });
+
+  if (error) {
+    message.textContent = 'Goal save error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Daily goal added successfully!';
+
+  document.getElementById('goalSubject').value = '';
+  document.getElementById('goalMinutes').value = '';
+
+  loadDailyGoals();
+}
+
+async function loadDailyGoals() {
+  const container = document.getElementById('dailyGoalsList');
+
+  if (!container) return;
+
+  container.textContent = 'Loading goals...';
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    container.textContent = 'Please login first.';
+    return;
+  }
+
+  const today = new Date();
+  const todayString =
+    today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  const { data, error } = await db
+    .from('study_daily_goals')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('goal_date', todayString)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Goal loading error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No goals added for today.';
+    return;
+  }
+
+  data.forEach(goal => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = goal.subject;
+
+    const progressText = document.createElement('p');
+    progressText.textContent =
+      goal.completed_minutes + ' / ' + goal.target_minutes + ' minutes';
+
+    const progress = document.createElement('div');
+    progress.className = 'progress';
+
+    const bar = document.createElement('span');
+    bar.style.width =
+      Math.min(100, (goal.completed_minutes / goal.target_minutes) * 100) + '%';
+
+    progress.appendChild(bar);
+
+    const addMinutes = document.createElement('button');
+    addMinutes.className = 'action';
+    addMinutes.textContent = '+15 Study Minutes';
+
+    addMinutes.onclick = () => updateGoalMinutes(goal.id, goal.completed_minutes, goal.target_minutes);
+
+    card.append(heading, progressText, progress, addMinutes);
+    container.appendChild(card);
+  });
+}
+
+async function updateGoalMinutes(id, completed, target) {
+  const newMinutes = Math.min(completed + 15, target);
+
+  if (newMinutes === completed) {
+    alert('This goal is already completed!');
+    return;
+  }
+
+  const { error } = await db
+    .from('study_daily_goals')
+    .update({ completed_minutes: newMinutes })
+    .eq('id', id);
+
+  if (error) {
+    alert('Progress update error: ' + error.message);
+    return;
+  }
+
+  loadDailyGoals();
 }
 </script>
  
