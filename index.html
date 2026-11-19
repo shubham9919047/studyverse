@@ -149,6 +149,18 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     </div>
   </div>
 </section>
+ <section id="studyplanner" class="page">
+  <div class="sectionhead">
+    <h3>📅 Study Planner</h3>
+    <span class="sub">Upcoming study events</span>
+  </div>
+
+  <div class="card">
+    <div id="studentStudyEventList">
+      <p class="muted">Study events will appear here.</p>
+    </div>
+  </div>
+</section>
  <section id="community" class="page"><div class="sectionhead"><h3>Study community</h3><span class="tag">Safety-first concept</span></div><div class="grid two"><div class="card"><h3>Find your study room</h3><div class="listitem"><b>Class 9–10 Foundation</b><p class="sub">Concepts, school exams and practice</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>JEE Aspirants</b><p class="sub">Physics · Chemistry · Mathematics</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>NEET Aspirants</b><p class="sub">Biology · Physics · Chemistry</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div></div><div class="card"><h3>Community guidelines</h3><p class="muted">Be kind, stay focused, protect your privacy.</p><ul><li>Use moderated topic-based study rooms.</li><li>Never share passwords, address or phone number publicly.</li><li>Report inappropriate messages and block unwanted contact.</li><li>For younger students, private messaging should be disabled by default.</li></ul><p class="sub">WhatsApp / Telegram invite links can be added by an administrator after safety and privacy review.</p></div></div></section>
  <section id="updates" class="page"><div class="sectionhead"><h3>Exam updates & calendar</h3><span class="tag">Sample entries</span></div><div class="card"><div class="listitem"><div class="row"><b>JEE Main</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://jeemain.nta.nic.in/" target="_blank" rel="noopener">Official JEE Main portal ↗</a></div><div class="listitem"><div class="row"><b>NEET UG</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://exams.nta.ac.in/NEET/" target="_blank" rel="noopener">Official NEET portal ↗</a></div><div class="listitem"><div class="row"><b>UPSC</b><span class="tag">Official calendar</span></div><p class="sub">Check the latest notification and annual calendar.</p><a href="https://upsc.gov.in/" target="_blank" rel="noopener">Official UPSC portal ↗</a></div><p class="sub">A live alert system needs an admin verification workflow and scheduled official-source checks.</p></div></section>
 <section id="myprofile" class="page">
@@ -3535,6 +3547,57 @@ async function deleteStudyEvent(id) {
 
   loadStudyEventsAdmin();
 }
+ async function loadStudentStudyEvents() {
+  const list = document.getElementById('studentStudyEventList');
+  if (!list) return;
+
+  list.replaceChildren();
+
+  const { data, error } = await db
+    .from('study_events')
+    .select('*')
+    .eq('is_published', true)
+    .order('event_date', { ascending: true });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No upcoming study events available.';
+    return;
+  }
+
+  data.forEach(event => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h4');
+    heading.textContent = event.title;
+    card.appendChild(heading);
+
+    const description = document.createElement('p');
+    description.textContent = event.description || 'No description';
+    card.appendChild(description);
+
+    const date = document.createElement('p');
+    date.textContent = 'Date: ' + new Date(event.event_date).toLocaleString();
+    card.appendChild(date);
+
+    const type = document.createElement('p');
+    type.textContent = 'Event: ' + (event.event_type || 'Study');
+    card.appendChild(type);
+
+    const classInfo = document.createElement('p');
+    classInfo.textContent = 'Class: ' + (event.class_level || 'All');
+    card.appendChild(classInfo);
+
+    list.appendChild(card);
+  });
+}
+ document.getElementById('studyplanner')
+  ?.addEventListener('click', loadStudentStudyEvents);
 </script>
  
 <!-- END SUPABASE CONNECTION -->
