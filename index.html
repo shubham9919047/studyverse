@@ -244,6 +244,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p id="myRewardMessage" class="muted"></p>
   </div>
 </section>
+ <section id="studentnotifications" class="page">
+  <div class="sectionhead">
+    <h3>🔔 My Notifications</h3>
+    <span class="sub">Updates from Studyverse</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadStudentNotifications()">
+      Load Notifications
+    </button>
+
+    <div id="studentNotificationList"></div>
+  </div>
+</section>
  <section id="assignments" class="page">
   <div class="sectionhead">
     <h3>📚 My Assignments</h3>
@@ -5332,6 +5346,56 @@ async function loadAdminRewards() {
   }
 
   message.textContent = 'Rewards loaded successfully!';
+}
+ async function loadStudentNotifications() {
+  const container = document.getElementById('studentNotificationList');
+
+  if (!container) return;
+
+  container.textContent = 'Loading notifications...';
+
+  const { data, error } = await db
+    .from('study_notifications')
+    .select('*')
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No notifications available.';
+    return;
+  }
+
+  data.forEach(notification => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = '🔔 ' + (notification.title || 'Notification');
+
+    const message = document.createElement('p');
+    message.textContent = notification.message || '';
+
+    const language = document.createElement('p');
+    language.className = 'muted';
+    language.textContent = 'Language: ' + (notification.language || 'Hindi');
+
+    const date = document.createElement('p');
+    date.className = 'muted';
+    date.textContent = notification.created_at
+      ? new Date(notification.created_at).toLocaleString()
+      : '';
+
+    card.append(heading, message, language, date);
+    container.appendChild(card);
+  });
 }
 </script>
  
