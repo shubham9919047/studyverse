@@ -483,6 +483,47 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Courses will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📖 Study Material Manager</h3>
+  <p class="muted">Manage chapter notes and PDF resources.</p>
+
+  <input id="materialTitle" class="field"
+    placeholder="Material title">
+
+  <input id="materialSubject" class="field"
+    placeholder="Subject">
+
+  <input id="materialClass" class="field"
+    placeholder="Class (e.g. 12)">
+
+  <input id="materialChapter" class="field"
+    placeholder="Chapter name">
+
+  <textarea id="materialDescription" class="field"
+    placeholder="Material description"></textarea>
+
+  <input id="materialUrl" class="field"
+    placeholder="PDF or resource URL">
+
+  <select id="materialAccess" class="field">
+    <option value="free">Free</option>
+    <option value="premium">Premium</option>
+  </select>
+
+  <button class="action" onclick="addStudyMaterial()">
+    Add Material
+  </button>
+
+  <p id="materialAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyMaterials()">
+    Load Materials
+  </button>
+
+  <div id="adminMaterialList">
+    <p class="muted">Materials will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -2179,6 +2220,159 @@ async function loadStudyCourses() {
 
     card.append(title, details, description, accessInfo,
       accessSelect, updateAccessBtn, activeBtn);
+
+    list.appendChild(card);
+  });
+}
+ async function addStudyMaterial() {
+  const title = document.getElementById('materialTitle').value.trim();
+  const subject = document.getElementById('materialSubject').value.trim();
+  const classLevel = document.getElementById('materialClass').value.trim();
+  const chapter = document.getElementById('materialChapter').value.trim();
+  const description = document.getElementById('materialDescription').value.trim();
+  const fileUrl = document.getElementById('materialUrl').value.trim();
+  const access = document.getElementById('materialAccess').value;
+  const msg = document.getElementById('materialAdminMessage');
+
+  if (!title || !subject || !classLevel || !fileUrl) {
+    msg.textContent = 'Title, subject, class and URL are required.';
+    return;
+  }
+
+  msg.textContent = 'Saving material...';
+
+  const { error } = await db.from('study_materials').insert({
+    title,
+    subject,
+    class_level: classLevel,
+    chapter,
+    description,
+    file_url: fileUrl,
+    access_level: access
+  });
+
+  if (error) {
+    msg.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  msg.textContent = 'Material added successfully!';
+
+  document.getElementById('materialTitle').value = '';
+  document.getElementById('materialSubject').value = '';
+  document.getElementById('materialClass').value = '';
+  document.getElementById('materialChapter').value = '';
+  document.getElementById('materialDescription').value = '';
+  document.getElementById('materialUrl').value = '';
+
+  loadStudyMaterials();
+}
+
+async function loadStudyMaterials() {
+  const list = document.getElementById('adminMaterialList');
+  const msg = document.getElementById('materialAdminMessage');
+
+  list.textContent = 'Loading materials...';
+
+  const { data, error } = await db
+    .from('study_materials')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No study materials added yet.';
+    return;
+  }
+
+  data.forEach(material => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const title = document.createElement('h4');
+    title.textContent = material.title;
+
+    const details = document.createElement('p');
+    details.textContent =
+      'Subject: ' + material.subject +
+      ' | Class: ' + material.class_level +
+      ' | Chapter: ' + (material.chapter || 'N/A');
+
+    const description = document.createElement('p');
+    description.textContent = material.description || 'No description.';
+
+    const accessInfo = document.createElement('p');
+    accessInfo.textContent =
+      'Access: ' + material.access_level.toUpperCase() +
+      ' | Status: ' + (material.is_active ? 'Active' : 'Inactive');
+
+    const link = document.createElement('a');
+    link.href = material.file_url;
+    link.textContent = 'Open Material';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+
+    const accessSelect = document.createElement('select');
+    accessSelect.className = 'field';
+
+    ['free', 'premium'].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value.toUpperCase();
+      option.selected = material.access_level === value;
+      accessSelect.appendChild(option);
+    });
+
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'action';
+    updateBtn.textContent = 'Update Access';
+
+    updateBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_materials')
+        .update({ access_level: accessSelect.value })
+        .eq('id', material.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Material access updated!';
+      loadStudyMaterials();
+    };
+
+    const activeBtn = document.createElement('button');
+    activeBtn.className = 'action';
+    activeBtn.style.marginTop = '8px';
+    activeBtn.textContent = material.is_active
+      ? 'Deactivate Material'
+      : 'Activate Material';
+
+    activeBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_materials')
+        .update({ is_active: !material.is_active })
+        .eq('id', material.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Material status updated!';
+      loadStudyMaterials();
+    };
+
+    card.append(title, details, description, link,
+      accessInfo, accessSelect, updateBtn, activeBtn);
 
     list.appendChild(card);
   });
