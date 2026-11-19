@@ -527,6 +527,19 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <h3>📅 Study Planner</h3>
     <span class="sub">Upcoming study events</span>
   </div>
+  <div class="card">
+  <h3>🗓️ Monthly Calendar</h3>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+    <button class="action" onclick="changeStudyCalendarMonth(-1)">◀ Previous</button>
+    <h3 id="studyCalendarMonth"></h3>
+    <button class="action" onclick="changeStudyCalendarMonth(1)">Next ▶</button>
+  </div>
+
+  <div id="studyCalendarGrid"
+       style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center;margin-top:15px;">
+  </div>
+</div>
 
   <div class="card">
     <div id="studentStudyEventList">
@@ -1348,9 +1361,11 @@ function showPage(id){
     loadDashboardStreak();
   }
 
-  if(id==='studyplanner'){
-    loadStudyEventsStudent();
-  }
+
+ if(id==='studyplanner'){
+  loadStudyEventsStudent();
+  renderStudyCalendar();
+}
 
   window.scrollTo(0,0);
 }
@@ -5865,6 +5880,92 @@ async function updateGoalMinutes(id, completed, target) {
 
     list.appendChild(card);
   });
+}
+ let studyCalendarDate = new Date();
+
+async function renderStudyCalendar() {
+  const grid = document.getElementById('studyCalendarGrid');
+  const monthLabel = document.getElementById('studyCalendarMonth');
+
+  if (!grid || !monthLabel) return;
+
+  const year = studyCalendarDate.getFullYear();
+  const month = studyCalendarDate.getMonth();
+
+  monthLabel.textContent = studyCalendarDate.toLocaleString('en', {
+    month: 'long',
+    year: 'numeric'
+  });
+
+  grid.replaceChildren();
+
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  dayNames.forEach(day => {
+    const cell = document.createElement('div');
+    cell.textContent = day;
+    cell.style.fontWeight = 'bold';
+    cell.style.padding = '6px';
+    grid.appendChild(cell);
+  });
+
+  const firstDay = new Date(year, month, 1);
+  let offset = firstDay.getDay();
+  offset = (offset + 6) % 7;
+
+  for (let i = 0; i < offset; i++) {
+    grid.appendChild(document.createElement('div'));
+  }
+
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  const startDate = new Date(year, month, 1);
+  const endDate = new Date(year, month + 1, 1);
+
+  const { data, error } = await db
+    .from('study_events')
+    .select('event_date')
+    .eq('is_published', true)
+    .gte('event_date', startDate.toISOString())
+    .lt('event_date', endDate.toISOString());
+
+  const eventDays = new Set();
+
+  if (!error && data) {
+    data.forEach(event => {
+      const d = new Date(event.event_date);
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        eventDays.add(d.getDate());
+      }
+    });
+  }
+
+  for (let day = 1; day <= totalDays; day++) {
+    const cell = document.createElement('div');
+    cell.style.padding = '8px 2px';
+    cell.style.border = '1px solid var(--border, #ccc)';
+    cell.style.borderRadius = '8px';
+
+    const number = document.createElement('div');
+    number.textContent = day;
+    cell.appendChild(number);
+
+    if (eventDays.has(day)) {
+      const dot = document.createElement('div');
+      dot.textContent = '📌';
+      cell.appendChild(dot);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function changeStudyCalendarMonth(change) {
+  studyCalendarDate.setMonth(
+    studyCalendarDate.getMonth() + change
+  );
+
+  renderStudyCalendar();
 }
 </script>
  
