@@ -216,9 +216,33 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
 
     <div class="card">
-      <h3>💡 Thought Manager</h3>
-      <p class="muted">Publish daily thoughts.</p>
-    </div>
+  <h3>💡 Thought Manager</h3>
+  <p class="muted">Create and publish daily thoughts.</p>
+
+  <textarea id="thoughtText" class="field"
+    placeholder="Write today's thought"></textarea>
+
+  <select id="thoughtLanguage" class="field">
+    <option value="Hindi">Hindi</option>
+    <option value="English">English</option>
+  </select>
+
+  <button class="action" onclick="addDailyThought()">
+    Save Thought
+  </button>
+
+  <p id="thoughtAdminMessage" class="muted"></p>
+
+  <h3>📋 Thought List</h3>
+
+  <div id="adminThoughtList">
+    <p class="muted">Thoughts will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminThoughts()">
+    Refresh Thoughts
+  </button>
+</div>
 
     <div class="card">
       <h3>🖼️ Photo Manager</h3>
@@ -810,6 +834,115 @@ async function toggleMotivationPublish(id, publish) {
   }
 
   await loadAdminMotivation();
+}
+ async function addDailyThought() {
+  const message = document.getElementById("thoughtAdminMessage");
+  const thought = document.getElementById("thoughtText").value.trim();
+  const language = document.getElementById("thoughtLanguage").value;
+
+  if (!thought) {
+    message.textContent = "Please write a thought first.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  message.textContent = "Saving thought...";
+
+  const { error } = await db.from("daily_thoughts").insert({
+    thought: thought,
+    language: language,
+    is_published: false
+  });
+
+  if (error) {
+    message.textContent = "Save Error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Thought saved successfully!";
+  document.getElementById("thoughtText").value = "";
+
+  await loadAdminThoughts();
+}
+
+
+async function loadAdminThoughts() {
+  const list = document.getElementById("adminThoughtList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("daily_thoughts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No thoughts added yet.";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const heading = document.createElement("h4");
+    heading.textContent = t.language;
+
+    const content = document.createElement("p");
+    content.textContent = t.thought;
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + (t.is_published ? "Published" : "Draft");
+
+    const button = document.createElement("button");
+    button.className = "action";
+    button.textContent = t.is_published ? "Unpublish" : "Publish";
+    button.onclick = () => toggleThoughtPublish(t.id, !t.is_published);
+
+    card.append(heading, content, status, button);
+    list.appendChild(card);
+  });
+}
+
+
+async function toggleThoughtPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("daily_thoughts")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminThoughts();
 }
 </script>
  
