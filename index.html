@@ -128,6 +128,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
   </div>
 </section>
+ <section id="studentvideos" class="page">
+  <div class="sectionhead">
+    <h3>🎥 Video Lecture Portal</h3>
+    <span class="sub">Learn through video lessons</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadStudentVideoLectures()">
+      Load Video Lectures
+    </button>
+
+    <div id="studentVideoLectureList"></div>
+  </div>
+</section>
  <section id="mocktestportal" class="page">
   <div class="sectionhead">
     <h3>📝 Mock Test Portal</h3>
@@ -4763,6 +4777,82 @@ async function toggleVideoLecturePublish(id, publish) {
   }
 
   await loadAdminVideoLectures();
+}
+ async function loadStudentVideoLectures() {
+  const container = document.getElementById('studentVideoLectureList');
+  container.textContent = 'Loading video lectures...';
+
+  const { data, error } = await db
+    .from('study_video_lectures')
+    .select('id,title,subject,class_level,chapter,description,video_url,access_level')
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = 'No published video lectures available.';
+    return;
+  }
+
+  data.forEach(video => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const heading = document.createElement('h3');
+    heading.textContent = video.title || 'Video Lecture';
+
+    const details = document.createElement('p');
+    details.className = 'muted';
+    details.textContent =
+      (video.subject || 'Subject N/A') +
+      ' | Class ' + (video.class_level || 'N/A') +
+      ' | ' + (video.chapter || 'Chapter N/A');
+
+    const description = document.createElement('p');
+    description.textContent = video.description || 'No description available.';
+
+    const access = document.createElement('p');
+    access.className = 'muted';
+    access.textContent = 'Access: ' + video.access_level.toUpperCase();
+
+    const watchButton = document.createElement('button');
+    watchButton.className = 'action';
+    watchButton.textContent = 'Watch Lecture';
+
+    watchButton.onclick = () => {
+      try {
+        const url = new URL(video.video_url);
+        const allowedHosts = [
+          'youtube.com',
+          'www.youtube.com',
+          'youtu.be',
+          'm.youtube.com'
+        ];
+
+        if (
+          url.protocol !== 'https:' ||
+          !allowedHosts.includes(url.hostname)
+        ) {
+          alert('Please use a valid HTTPS YouTube link.');
+          return;
+        }
+
+        window.open(url.href, '_blank', 'noopener,noreferrer');
+      } catch {
+        alert('Invalid video link.');
+      }
+    };
+
+    card.append(heading, details, description, access, watchButton);
+    container.appendChild(card);
+  });
 }
 </script>
  
