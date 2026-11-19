@@ -85,6 +85,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
  </section>
  <section id="classes" class="page"><div class="sectionhead"><h3>Choose your learning track</h3><span class="sub">Demo catalogue</span></div><div class="grid three" id="trackGrid"></div></section>
  <section id="practice" class="page"><div class="sectionhead"><h3>Daily practice zone</h3><span class="tag">Sample quiz</span></div><div class="card"><div class="eyebrow">PHYSICS · CLASS 11–12</div><h3 id="qtext">A body starts from rest and moves with uniform acceleration. Which equation gives its velocity after time t?</h3><div id="opts"></div><div id="feedback" class="muted"></div><div id="quizStats" class="muted">Attempted: 0 | Correct: 0 | Accuracy: 0%</div><button class="action" onclick="nextQ()">Next question ↗</button></div><p class="sub">Questions shown here are illustrative demo content, not an official PYQ archive.</p></section>
+ <section id="studentquiz" class="page">
+  <div class="sectionhead">
+    <h3>🧠 Quiz Challenge</h3>
+    <span class="sub">Test your knowledge</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="startStudentQuiz()">
+      Start Quiz
+    </button>
+
+    <div id="studentQuizArea"></div>
+  </div>
+</section>
  <section id="games" class="page"><div class="sectionhead"><h3>Study games</h3><span class="sub">Quick brain breaks with learning</span></div><div class="grid three"><div class="card"><div class="tileicon">🔢</div><h3>Number Sprint</h3><p class="muted">Solve a quick mental maths challenge.</p><button class="action" onclick="mathGame()">Start game</button><p id="gameout"></p></div><div class="card"><div class="tileicon">🧠</div><h3>Concept Match</h3><p class="muted">Match concepts with their subjects.</p><button class="action" onclick="notify('Concept Match demo is ready for the next build.')">Play demo</button></div><div class="card"><div class="tileicon">🌍</div><h3>GK Challenge</h3><p class="muted">Build everyday awareness.</p><button class="action" onclick="notify('GK Challenge content will be added in the content dashboard.')">Play demo</button></div></div></section>
  <section id="leaderboard" class="page">
   <div class="sectionhead">
@@ -103,6 +117,7 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     </div>
   </div>
 </section>
+ 
  <section id="assignments" class="page">
   <div class="sectionhead">
     <h3>📚 My Assignments</h3>
@@ -4011,6 +4026,159 @@ async function loadAdminLeaderboard() {
     card.append(rank, name, studentClass, points);
     list.appendChild(card);
   });
+}
+ let studentQuizQuestions = [];
+let studentQuizIndex = 0;
+let studentQuizScore = 0;
+let studentQuizAnswered = false;
+
+async function startStudentQuiz() {
+  const area = document.getElementById('studentQuizArea');
+  area.textContent = 'Loading questions...';
+
+  const { data, error } = await db
+    .from('quiz_questions')
+    .select('question,option_a,option_b,option_c,option_d,correct_option,explanation')
+    .eq('is_published', true);
+
+  if (error) {
+    area.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    area.textContent = 'No published questions available yet.';
+    return;
+  }
+
+  studentQuizQuestions = data.sort(() => Math.random() - 0.5);
+  studentQuizIndex = 0;
+  studentQuizScore = 0;
+  studentQuizAnswered = false;
+
+  renderStudentQuizQuestion();
+}
+
+function renderStudentQuizQuestion() {
+  const area = document.getElementById('studentQuizArea');
+  area.textContent = '';
+
+  if (studentQuizIndex >= studentQuizQuestions.length) {
+    finishStudentQuiz();
+    return;
+  }
+
+  studentQuizAnswered = false;
+  const q = studentQuizQuestions[studentQuizIndex];
+
+  const heading = document.createElement('h3');
+  heading.textContent =
+    'Question ' + (studentQuizIndex + 1) +
+    ' of ' + studentQuizQuestions.length;
+
+  const question = document.createElement('p');
+  question.textContent = q.question;
+
+  area.append(heading, question);
+
+  const options = [
+    ['A', q.option_a],
+    ['B', q.option_b],
+    ['C', q.option_c],
+    ['D', q.option_d]
+  ];
+
+  const selectedOption = document.createElement('select');
+  selectedOption.className = 'field';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select an answer';
+  selectedOption.appendChild(placeholder);
+
+  options.forEach(([letter, text]) => {
+    const option = document.createElement('option');
+    option.value = letter;
+    option.textContent = letter + '. ' + text;
+    selectedOption.appendChild(option);
+  });
+
+  area.appendChild(selectedOption);
+
+  const submitButton = document.createElement('button');
+  submitButton.className = 'action';
+  submitButton.textContent = 'Submit Answer';
+
+  const feedback = document.createElement('p');
+
+  submitButton.onclick = () => {
+    if (studentQuizAnswered) return;
+
+    const chosen = selectedOption.value;
+
+    if (!chosen) {
+      feedback.textContent = 'Please select an answer.';
+      return;
+    }
+
+    studentQuizAnswered = true;
+
+    const correct = String(q.correct_option).trim().toUpperCase();
+
+    if (chosen === correct) {
+      studentQuizScore++;
+      feedback.textContent = 'Correct answer! 🎉';
+    } else {
+      feedback.textContent = 'Incorrect answer. Correct option: ' + correct;
+    }
+
+    if (q.explanation) {
+      feedback.textContent += ' | ' + q.explanation;
+    }
+
+    selectedOption.disabled = true;
+    submitButton.disabled = true;
+    nextButton.style.display = 'inline-block';
+  };
+
+  area.append(submitButton, feedback);
+
+  const nextButton = document.createElement('button');
+  nextButton.className = 'action';
+  nextButton.textContent =
+    studentQuizIndex === studentQuizQuestions.length - 1
+      ? 'Finish Quiz'
+      : 'Next Question';
+
+  nextButton.style.display = 'none';
+
+  nextButton.onclick = () => {
+    if (!studentQuizAnswered) return;
+    studentQuizIndex++;
+    renderStudentQuizQuestion();
+  };
+
+  area.appendChild(nextButton);
+}
+
+function finishStudentQuiz() {
+  const area = document.getElementById('studentQuizArea');
+  area.textContent = '';
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'Quiz Completed! 🎉';
+
+  const result = document.createElement('p');
+  result.textContent =
+    'Your Score: ' + studentQuizScore +
+    ' / ' + studentQuizQuestions.length;
+
+  const restart = document.createElement('button');
+  restart.className = 'action';
+  restart.textContent = 'Play Again';
+  restart.onclick = startStudentQuiz;
+
+  area.append(heading, result, restart);
 }
 </script>
  
