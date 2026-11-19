@@ -1292,7 +1292,7 @@ document.getElementById('trackGrid').innerHTML=tracks.map(t=>`<div class="card t
 const qs=[{q:"A body starts from rest and moves with uniform acceleration. Which equation gives its velocity after time t?",o:["v = u + at","s = ut + ½at²","v² = u² + 2as","F = ma"],a:0,e:"For uniform acceleration, final velocity v = u + at."},{q:"The SI unit of force is:",o:["Joule","Newton","Watt","Pascal"],a:1,e:"Force is measured in newtons (N)."}];let qi=0;
  let totalCorrect=0;
 let totalAttempted=0;
-function renderQ(){let q=qs[qi];dontcument.getElementById('qtext').textContent=q.q;document.getElementById('feedback').textContent='';document.getElementById('opts').innerHTML=q.o.map((x,i)=>`<button class="quizopt" onclick="answer(${i})">${String.fromCharCode(65+i)}. ${x}</button>`).join('')}
+function renderQ(){let q=qs[qi];document.getElementById('qtext').textContent=q.q;document.getElementById('feedback').textContent='';document.getElementById('opts').innerHTML=q.o.map((x,i)=>`<button class="quizopt" onclick="answer(${i})">${String.fromCharCode(65+i)}. ${x}</button>`).join('')}
 function updateQuizStats() {
   const accuracy = totalAttempted
     ? Math.round((totalCorrect / totalAttempted) * 100)
