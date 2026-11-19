@@ -135,9 +135,53 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 
   <div class="grid three">
     <div class="card">
-      <h3>📚 Quiz Manager</h3>
-      <p class="muted">Add and manage questions.</p>
-    </div>
+  <h3>📚 Quiz Manager</h3>
+  <p class="muted">Create and manage questions.</p>
+
+  <input id="quizQuestion" class="field" placeholder="Enter question">
+
+  <input id="quizOptionA" class="field" placeholder="Option A">
+  <input id="quizOptionB" class="field" placeholder="Option B">
+  <input id="quizOptionC" class="field" placeholder="Option C">
+  <input id="quizOptionD" class="field" placeholder="Option D">
+
+  <select id="quizCorrect" class="field">
+    <option value="">Select correct answer</option>
+    <option value="A">Option A</option>
+    <option value="B">Option B</option>
+    <option value="C">Option C</option>
+    <option value="D">Option D</option>
+  </select>
+
+  <textarea id="quizExplanation" class="field" placeholder="Explanation"></textarea>
+
+  <input id="quizClass" class="field" placeholder="Class">
+
+  <select id="quizSubject" class="field">
+    <option value="">Select Subject</option>
+    <option value="Physics">Physics</option>
+    <option value="Chemistry">Chemistry</option>
+    <option value="Maths">Maths</option>
+    <option value="Biology">Biology</option>
+  </select>
+
+  <select id="quizDifficulty" class="field">
+    <option value="Easy">Easy</option>
+    <option value="Medium">Medium</option>
+    <option value="Hard">Hard</option>
+  </select>
+
+  <button class="action" onclick="addQuizQuestion()">Save Question</button>
+
+  <p id="quizAdminMessage" class="muted"></p>
+
+  <h3>📋 Question Bank</h3>
+  <div id="adminQuestionList">
+    <p class="muted">Questions will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminQuestions()">Refresh Questions</button>
+</div>
 
     <div class="card">
       <h3>🌟 Motivation Manager</h3>
