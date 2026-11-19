@@ -108,6 +108,22 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </div>
   </div>
 </section>
+ <section id="mocktestportal" class="page">
+  <div class="sectionhead">
+    <h3>📝 Mock Test Portal</h3>
+    <span class="sub">Practice full tests</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadStudentTests()">
+      Load Available Tests
+    </button>
+
+    <div id="studentTestList"></div>
+  </div>
+
+  <div id="studentTestAttemptArea"></div>
+</section>
  <section id="games" class="page"><div class="sectionhead"><h3>Study games</h3><span class="sub">Quick brain breaks with learning</span></div><div class="grid three"><div class="card"><div class="tileicon">🔢</div><h3>Number Sprint</h3><p class="muted">Solve a quick mental maths challenge.</p><button class="action" onclick="mathGame()">Start game</button><p id="gameout"></p></div><div class="card"><div class="tileicon">🧠</div><h3>Concept Match</h3><p class="muted">Match concepts with their subjects.</p><button class="action" onclick="notify('Concept Match demo is ready for the next build.')">Play demo</button></div><div class="card"><div class="tileicon">🌍</div><h3>GK Challenge</h3><p class="muted">Build everyday awareness.</p><button class="action" onclick="notify('GK Challenge content will be added in the content dashboard.')">Play demo</button></div></div></section>
  <section id="leaderboard" class="page">
   <div class="sectionhead">
@@ -4260,6 +4276,267 @@ async function loadMyQuizResults() {
     card.append(title, score, type, date);
     list.appendChild(card);
   });
+}
+ let activeMockTest = null;
+let mockTestQuestions = [];
+let mockTestIndex = 0;
+let mockTestScore = 0;
+let mockTestTimer = null;
+let mockTestAttemptId = null;
+let mockTestAnswers = [];
+
+async function loadStudentTests() {
+  const list = document.getElementById('studentTestList');
+  list.textContent = 'Loading tests...';
+
+  const { data, error } = await db
+    .from('study_tests')
+    .select('id,title,exam_name,class_level,subject,duration_minutes,total_marks')
+    .eq('is_published', true)
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.textContent = '';
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No published tests available.';
+    return;
+  }
+
+  data.forEach(test => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const title = document.createElement('h3');
+    title.textContent = test.title;
+
+    const details = document.createElement('p');
+    details.textContent =
+      (test.exam_name || '') + ' | ' +
+      (test.subject || '') + ' | ' +
+      test.duration_minutes + ' Minutes';
+
+    const start = document.createElement('button');
+    start.className = 'action';
+    start.textContent = 'Start Test';
+    start.onclick = () => startMockTest(test);
+
+    card.append(title, details, start);
+    list.appendChild(card);
+  });
+}
+
+async function startMockTest(test) {
+  clearInterval(mockTestTimer);
+
+  const area = document.getElementById('studentTestAttemptArea');
+  area.textContent = 'Loading test questions...';
+
+  const { data, error } = await db
+    .from('study_test_questions')
+    .select('id,question,option_a,option_b,option_c,option_d,correct_option,explanation,marks')
+    .eq('test_id', test.id);
+
+  if (error) {
+    area.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    area.textContent = 'No questions found in this test.';
+    return;
+  }
+
+  const { data: { user } } = await db.auth.getUser();
+
+  if (!user) {
+    area.textContent = 'Please login first.';
+    return;
+  }
+
+  const { data: attempt, error: attemptError } = await db
+    .from('study_test_attempts')
+    .insert({
+      user_id: user.id,
+      test_id: test.id,
+      total_marks: test.total_marks || 0,
+      status: 'in_progress'
+    })
+    .select('id')
+    .single();
+
+  if (attemptError) {
+    area.textContent = 'Attempt error: ' + attemptError.message;
+    return;
+  }
+
+  mockTestAttemptId = attempt.id;
+  activeMockTest = test;
+  mockTestQuestions = data.sort(() => Math.random() - 0.5);
+  mockTestIndex = 0;
+  mockTestScore = 0;
+  mockTestAnswers = [];
+
+  renderMockTestQuestion();
+
+  let seconds = Math.max(1, Number(test.duration_minutes || 1)) * 60;
+
+  updateMockTestTimer(seconds);
+
+  mockTestTimer = setInterval(() => {
+    seconds--;
+    updateMockTestTimer(seconds);
+
+    if (seconds <= 0) {
+      clearInterval(mockTestTimer);
+      submitMockTest(true);
+    }
+  }, 1000);
+}
+
+function updateMockTestTimer(seconds) {
+  const timer = document.getElementById('mockTestTimer');
+  if (!timer) return;
+
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  timer.textContent =
+    'Time Left: ' +
+    mins + ':' + String(secs).padStart(2, '0');
+}
+
+function renderMockTestQuestion() {
+  const area = document.getElementById('studentTestAttemptArea');
+  area.textContent = '';
+
+  const q = mockTestQuestions[mockTestIndex];
+
+  if (!q) {
+    submitMockTest(false);
+    return;
+  }
+
+  const timer = document.createElement('h3');
+  timer.id = 'mockTestTimer';
+
+  const heading = document.createElement('h3');
+  heading.textContent =
+    'Question ' + (mockTestIndex + 1) +
+    ' of ' + mockTestQuestions.length;
+
+  const question = document.createElement('p');
+  question.textContent = q.question;
+
+  const select = document.createElement('select');
+  select.className = 'field';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select answer';
+  select.appendChild(placeholder);
+
+  [['A', q.option_a], ['B', q.option_b],
+   ['C', q.option_c], ['D', q.option_d]]
+    .forEach(([letter, value]) => {
+      const option = document.createElement('option');
+      option.value = letter;
+      option.textContent = letter + '. ' + value;
+      select.appendChild(option);
+    });
+
+  const saved = mockTestAnswers[mockTestIndex];
+  if (saved) select.value = saved;
+
+  const next = document.createElement('button');
+  next.className = 'action';
+  next.textContent =
+    mockTestIndex === mockTestQuestions.length - 1
+      ? 'Submit Test'
+      : 'Next Question';
+
+  next.onclick = () => {
+    mockTestAnswers[mockTestIndex] = select.value;
+    if (mockTestIndex < mockTestQuestions.length - 1) {
+      mockTestIndex++;
+      renderMockTestQuestion();
+    } else {
+      submitMockTest(false);
+    }
+  };
+
+  const previous = document.createElement('button');
+  previous.className = 'action';
+  previous.textContent = 'Previous Question';
+  previous.disabled = mockTestIndex === 0;
+
+  previous.onclick = () => {
+    mockTestAnswers[mockTestIndex] = select.value;
+    if (mockTestIndex > 0) {
+      mockTestIndex--;
+      renderMockTestQuestion();
+    }
+  };
+
+  area.append(timer, heading, question, select, previous, next);
+}
+
+async function submitMockTest(autoSubmit) {
+  if (!mockTestAttemptId) return;
+
+  clearInterval(mockTestTimer);
+
+  const area = document.getElementById('studentTestAttemptArea');
+
+  if (!autoSubmit) {
+    const currentSelect = area.querySelector('select');
+    if (currentSelect) {
+      mockTestAnswers[mockTestIndex] = currentSelect.value;
+    }
+  }
+
+  mockTestScore = 0;
+
+  mockTestQuestions.forEach((q, i) => {
+    const correct = String(q.correct_option).trim().toUpperCase();
+    if (mockTestAnswers[i] === correct) {
+      mockTestScore += Number(q.marks || 0);
+    }
+  });
+
+  const { error } = await db
+    .from('study_test_attempts')
+    .update({
+      score: mockTestScore,
+      submitted_at: new Date().toISOString(),
+      status: 'submitted'
+    })
+    .eq('id', mockTestAttemptId);
+
+  area.textContent = '';
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'Test Submitted!';
+
+  const result = document.createElement('p');
+  result.textContent =
+    'Score: ' + mockTestScore +
+    ' / ' + (activeMockTest.total_marks || 0);
+
+  const message = document.createElement('p');
+  message.textContent = error
+    ? 'Result update error: ' + error.message
+    : autoSubmit
+      ? 'Time ended. Your test was submitted.'
+      : 'Your test has been submitted successfully.';
+
+  area.append(heading, result, message);
+
+  mockTestAttemptId = null;
 }
 </script>
  
