@@ -219,6 +219,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <div id="studyHistoryList"></div>
   </div>
 </section>
+ <section id="leaderboard" class="page">
+  <div class="sectionhead">
+    <h3>🏆 Student Leaderboard</h3>
+    <span class="sub">Top students by XP</span>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadStudentLeaderboard()">
+      Load Leaderboard
+    </button>
+
+    <div id="studentLeaderboardList"></div>
+  </div>
+</section>
  <section id="community" class="page"><div class="sectionhead"><h3>Study community</h3><span class="tag">Safety-first concept</span></div><div class="grid two"><div class="card"><h3>Find your study room</h3><div class="listitem"><b>Class 9–10 Foundation</b><p class="sub">Concepts, school exams and practice</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>JEE Aspirants</b><p class="sub">Physics · Chemistry · Mathematics</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>NEET Aspirants</b><p class="sub">Biology · Physics · Chemistry</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div></div><div class="card"><h3>Community guidelines</h3><p class="muted">Be kind, stay focused, protect your privacy.</p><ul><li>Use moderated topic-based study rooms.</li><li>Never share passwords, address or phone number publicly.</li><li>Report inappropriate messages and block unwanted contact.</li><li>For younger students, private messaging should be disabled by default.</li></ul><p class="sub">WhatsApp / Telegram invite links can be added by an administrator after safety and privacy review.</p></div></div></section>
  <section id="updates" class="page"><div class="sectionhead"><h3>Exam updates & calendar</h3><span class="tag">Sample entries</span></div><div class="card"><div class="listitem"><div class="row"><b>JEE Main</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://jeemain.nta.nic.in/" target="_blank" rel="noopener">Official JEE Main portal ↗</a></div><div class="listitem"><div class="row"><b>NEET UG</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://exams.nta.ac.in/NEET/" target="_blank" rel="noopener">Official NEET portal ↗</a></div><div class="listitem"><div class="row"><b>UPSC</b><span class="tag">Official calendar</span></div><p class="sub">Check the latest notification and annual calendar.</p><a href="https://upsc.gov.in/" target="_blank" rel="noopener">Official UPSC portal ↗</a></div><p class="sub">A live alert system needs an admin verification workflow and scheduled official-source checks.</p></div></section>
 <section id="myprofile" class="page">
@@ -3927,6 +3941,74 @@ async function loadAdminLeaderboard() {
     xp.textContent = record.points + ' XP';
 
     card.append(rank, name, classText, xp);
+    list.appendChild(card);
+  });
+}
+ async function loadStudentLeaderboard() {
+  const list = document.getElementById('studentLeaderboardList');
+  list.textContent = 'Loading leaderboard...';
+
+  const { data, error } = await db
+    .from('study_points')
+    .select('user_id,points')
+    .order('points', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'Leaderboard is empty.';
+    return;
+  }
+
+  const ids = data.map(r => r.user_id);
+
+  const { data: profiles, error: profileError } = await db
+    .from('profiles')
+    .select('id,full_name,class_level')
+    .in('id', ids);
+
+  if (profileError) {
+    list.textContent = 'Profile error: ' + profileError.message;
+    return;
+  }
+
+  const profileMap = new Map(
+    (profiles || []).map(p => [p.id, p])
+  );
+
+  list.textContent = '';
+
+  data.forEach((record, index) => {
+    const profile = profileMap.get(record.user_id);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const rank = document.createElement('h3');
+    rank.textContent =
+      (index === 0 ? '🥇 ' :
+       index === 1 ? '🥈 ' :
+       index === 2 ? '🥉 ' : '🏅 ') +
+      'Rank #' + (index + 1);
+
+    const name = document.createElement('p');
+    name.textContent = profile
+      ? profile.full_name || 'Student'
+      : 'Student';
+
+    const studentClass = document.createElement('p');
+    studentClass.textContent = profile
+      ? 'Class ' + (profile.class_level || 'N/A')
+      : '';
+
+    const points = document.createElement('p');
+    points.textContent = record.points + ' XP';
+
+    card.append(rank, name, studentClass, points);
     list.appendChild(card);
   });
 }
