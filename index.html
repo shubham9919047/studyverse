@@ -431,6 +431,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Feedback will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>🎫 Support/Ticket Manager</h3>
+  <p class="muted">Manage student support requests.</p>
+
+  <button class="action" onclick="loadAdminTickets()">
+    Load Support Tickets
+  </button>
+
+  <p id="ticketAdminMessage" class="muted"></p>
+
+  <div id="adminTicketList">
+    <p class="muted">Support tickets will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -1910,6 +1924,80 @@ async function loadContentAccess() {
     };
 
     card.append(title, details, content, status, select, updateBtn);
+    list.appendChild(card);
+  });
+}
+ async function loadAdminTickets() {
+  const list = document.getElementById('adminTicketList');
+  const msg = document.getElementById('ticketAdminMessage');
+
+  list.textContent = 'Loading tickets...';
+
+  const { data, error } = await db
+    .from('study_support_tickets')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No support tickets yet.';
+    return;
+  }
+
+  data.forEach(ticket => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const title = document.createElement('h4');
+    title.textContent = ticket.subject;
+
+    const student = document.createElement('p');
+    student.textContent = 'Student: ' + (ticket.student_name || 'Unknown');
+
+    const message = document.createElement('p');
+    message.textContent = ticket.message;
+
+    const statusInfo = document.createElement('p');
+    statusInfo.textContent = 'Status: ' + ticket.status;
+
+    const select = document.createElement('select');
+    select.className = 'field';
+
+    ['Open', 'In Progress', 'Resolved'].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      option.selected = ticket.status === value;
+      select.appendChild(option);
+    });
+
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'action';
+    updateBtn.textContent = 'Update Status';
+
+    updateBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_support_tickets')
+        .update({ status: select.value })
+        .eq('id', ticket.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'Ticket status updated!';
+      loadAdminTickets();
+    };
+
+    card.append(title, student, message, statusInfo, select, updateBtn);
     list.appendChild(card);
   });
 }
