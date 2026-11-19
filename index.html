@@ -5795,6 +5795,61 @@ async function updateGoalMinutes(id, completed, target) {
 
   loadDailyGoals();
 }
+ async function loadStudyEventsStudent() {
+  const list = document.getElementById('studentStudyEventList');
+  if (!list) return;
+
+  list.textContent = 'Loading events...';
+
+  const { data, error } = await db
+    .from('study_events')
+    .select('*')
+    .eq('is_published', true)
+    .order('event_date', { ascending: true });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No upcoming events.';
+    return;
+  }
+
+  data.forEach(event => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h3');
+    heading.textContent = '📅 ' + event.title;
+
+    const description = document.createElement('p');
+    description.textContent = event.description || 'No description';
+
+    const date = document.createElement('p');
+    date.textContent = 'Date: ' +
+      new Date(event.event_date).toLocaleString();
+
+    const type = document.createElement('p');
+    type.textContent = 'Type: ' + (event.event_type || 'Study');
+
+    const classInfo = document.createElement('p');
+    classInfo.textContent = 'Class: ' + (event.class_level || 'All');
+
+    card.append(
+      heading,
+      description,
+      date,
+      type,
+      classInfo
+    );
+
+    list.appendChild(card);
+  });
+}
 </script>
  
 <!-- END SUPABASE CONNECTION -->
