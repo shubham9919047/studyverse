@@ -279,10 +279,37 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </button>
 </div>
 
-    <div class="card">
-      <h3>🔔 Notifications</h3>
-      <p class="muted">Send student notifications.</p>
-    </div>
+   <div class="card">
+  <h3>🔔 Notifications Manager</h3>
+  <p class="muted">Create and publish student notifications.</p>
+
+  <input id="notificationTitle" class="field"
+    placeholder="Notification title">
+
+  <textarea id="notificationMessage" class="field"
+    placeholder="Write notification message"></textarea>
+
+  <select id="notificationLanguage" class="field">
+    <option value="Hindi">Hindi</option>
+    <option value="English">English</option>
+  </select>
+
+  <button class="action" onclick="addStudyNotification()">
+    Save Notification
+  </button>
+
+  <p id="notificationAdminMessage" class="muted"></p>
+
+  <h3>📋 Notification List</h3>
+
+  <div id="adminNotificationList">
+    <p class="muted">Notifications will appear here.</p>
+  </div>
+
+  <button class="action" onclick="loadAdminNotifications()">
+    Refresh Notifications
+  </button>
+</div>
 
     <div class="card">
       <h3>📢 Announcements</h3>
@@ -1139,6 +1166,121 @@ document.getElementById("photoFile").addEventListener("change", function() {
   preview.src = URL.createObjectURL(file);
   preview.style.display = "block";
 });
+ async function addStudyNotification() {
+  const messageBox = document.getElementById("notificationAdminMessage");
+  const title = document.getElementById("notificationTitle").value.trim();
+  const message = document.getElementById("notificationMessage").value.trim();
+  const language = document.getElementById("notificationLanguage").value;
+
+  if (!title || !message) {
+    messageBox.textContent = "Please fill title and message.";
+    return;
+  }
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    messageBox.textContent = "Please login first.";
+    return;
+  }
+
+  messageBox.textContent = "Saving notification...";
+
+  const { error } = await db.from("study_notifications").insert({
+    title: title,
+    message: message,
+    language: language,
+    is_published: false
+  });
+
+  if (error) {
+    messageBox.textContent = "Save Error: " + error.message;
+    return;
+  }
+
+  messageBox.textContent = "Notification saved successfully!";
+  document.getElementById("notificationTitle").value = "";
+  document.getElementById("notificationMessage").value = "";
+
+  await loadAdminNotifications();
+}
+
+
+async function loadAdminNotifications() {
+  const list = document.getElementById("adminNotificationList");
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    list.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("study_notifications")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = "No notifications added yet.";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(n => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const heading = document.createElement("h4");
+    heading.textContent = n.title;
+
+    const content = document.createElement("p");
+    content.textContent = n.message;
+
+    const language = document.createElement("p");
+    language.textContent = "Language: " + n.language;
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + (n.is_published ? "Published" : "Draft");
+
+    const button = document.createElement("button");
+    button.className = "action";
+    button.textContent = n.is_published ? "Unpublish" : "Publish";
+    button.onclick = () => toggleNotificationPublish(n.id, !n.is_published);
+
+    card.append(heading, content, language, status, button);
+    list.appendChild(card);
+  });
+}
+
+
+async function toggleNotificationPublish(id, publish) {
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    alert("Please login first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("study_notifications")
+    .update({ is_published: publish })
+    .eq("id", id);
+
+  if (error) {
+    alert("Update Error: " + error.message);
+    return;
+  }
+
+  await loadAdminNotifications();
+}
 </script>
  
 <!-- END SUPABASE CONNECTION -->
