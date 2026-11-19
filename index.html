@@ -737,6 +737,30 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Submissions will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📅 Study Planner Manager</h3>
+  <p class="muted">Create study events, schedules and deadlines.</p>
+
+  <input id="eventTitle" class="field" placeholder="Event title">
+
+  <textarea id="eventDescription" class="field" placeholder="Event description"></textarea>
+
+  <input id="eventDate" class="field" type="datetime-local">
+
+  <input id="eventType" class="field" placeholder="Event type (Exam, Study, Revision...)">
+
+  <input id="eventClass" class="field" placeholder="Class">
+
+  <button class="action" onclick="addStudyEvent()">Create Event</button>
+
+  <p id="eventAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyEventsAdmin()">Load Events</button>
+
+  <div id="adminStudyEventList">
+    <p class="muted">Events will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -3379,6 +3403,138 @@ async function loadMyAssignmentSubmissions() {
   ?.addEventListener('click', function() {
     loadStudentAssignments();
   });
+ async function addStudyEvent() {
+  const title = document.getElementById('eventTitle').value.trim();
+  const description = document.getElementById('eventDescription').value.trim();
+  const dateInput = document.getElementById('eventDate').value;
+  const eventType = document.getElementById('eventType').value.trim();
+  const classLevel = document.getElementById('eventClass').value.trim();
+  const message = document.getElementById('eventAdminMessage');
+
+  if (!title || !dateInput) {
+    message.textContent = 'Title and event date are required.';
+    return;
+  }
+
+  message.textContent = 'Creating event...';
+
+  const { error } = await db.from('study_events').insert([{
+    title,
+    description,
+    event_date: new Date(dateInput).toISOString(),
+    event_type: eventType,
+    class_level: classLevel
+  }]);
+
+  if (error) {
+    message.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Event created successfully!';
+
+  document.getElementById('eventTitle').value = '';
+  document.getElementById('eventDescription').value = '';
+  document.getElementById('eventDate').value = '';
+  document.getElementById('eventType').value = '';
+  document.getElementById('eventClass').value = '';
+
+  loadStudyEventsAdmin();
+}
+
+async function loadStudyEventsAdmin() {
+  const list = document.getElementById('adminStudyEventList');
+  list.replaceChildren();
+
+  const { data, error } = await db
+    .from('study_events')
+    .select('*')
+    .order('event_date', { ascending: true });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No events created yet.';
+    return;
+  }
+
+  data.forEach(event => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const heading = document.createElement('h4');
+    heading.textContent = event.title;
+    card.appendChild(heading);
+
+    const description = document.createElement('p');
+    description.textContent = event.description || 'No description';
+    card.appendChild(description);
+
+    const details = document.createElement('p');
+    details.textContent =
+      'Date: ' + new Date(event.event_date).toLocaleString() +
+      ' | Type: ' + (event.event_type || 'Study') +
+      ' | Class: ' + (event.class_level || 'All');
+    card.appendChild(details);
+
+    const status = document.createElement('p');
+    status.textContent = event.is_published ? 'Published' : 'Unpublished';
+    card.appendChild(status);
+
+    const publishButton = document.createElement('button');
+    publishButton.className = 'action';
+    publishButton.textContent = event.is_published ? 'Unpublish' : 'Publish';
+    publishButton.onclick = () =>
+      toggleStudyEventPublish(event.id, !event.is_published);
+    card.appendChild(publishButton);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'action';
+    deleteButton.textContent = 'Delete Event';
+    deleteButton.onclick = () => deleteStudyEvent(event.id);
+    card.appendChild(deleteButton);
+
+    list.appendChild(card);
+  });
+}
+
+async function toggleStudyEventPublish(id, publish) {
+  const { error } = await db
+    .from('study_events')
+    .update({ is_published: publish })
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('eventAdminMessage').textContent =
+      'Error: ' + error.message;
+    return;
+  }
+
+  loadStudyEventsAdmin();
+}
+
+async function deleteStudyEvent(id) {
+  if (!confirm('Delete this event?')) return;
+
+  const { error } = await db
+    .from('study_events')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    document.getElementById('eventAdminMessage').textContent =
+      'Error: ' + error.message;
+    return;
+  }
+
+  document.getElementById('eventAdminMessage').textContent =
+    'Event deleted successfully!';
+
+  loadStudyEventsAdmin();
+}
 </script>
  
 <!-- END SUPABASE CONNECTION -->
