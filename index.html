@@ -524,6 +524,49 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     <p class="muted">Materials will appear here.</p>
   </div>
 </div>
+  <div class="card">
+  <h3>📝 PYQ Manager</h3>
+  <p class="muted">Manage Previous Year Questions.</p>
+
+  <textarea id="pyqQuestion" class="field"
+    placeholder="Enter question"></textarea>
+
+  <input id="pyqOptionA" class="field" placeholder="Option A">
+  <input id="pyqOptionB" class="field" placeholder="Option B">
+  <input id="pyqOptionC" class="field" placeholder="Option C">
+  <input id="pyqOptionD" class="field" placeholder="Option D">
+
+  <select id="pyqCorrect" class="field">
+    <option value="">Select correct answer</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
+  </select>
+
+  <textarea id="pyqExplanation" class="field"
+    placeholder="Explanation"></textarea>
+
+  <input id="pyqExam" class="field" placeholder="Exam name (JEE, NEET...)">
+  <input id="pyqYear" class="field" placeholder="Exam year">
+  <input id="pyqClass" class="field" placeholder="Class">
+  <input id="pyqSubject" class="field" placeholder="Subject">
+  <input id="pyqChapter" class="field" placeholder="Chapter">
+
+  <button class="action" onclick="addStudyPYQ()">
+    Add PYQ
+  </button>
+
+  <p id="pyqAdminMessage" class="muted"></p>
+
+  <button class="action" onclick="loadStudyPYQs()">
+    Load PYQs
+  </button>
+
+  <div id="adminPYQList">
+    <p class="muted">PYQs will appear here.</p>
+  </div>
+</div>
 </section>
  <section id="progress" class="page"><div class="sectionhead"><h3>My progress</h3><span class="tag">Demo analytics</span></div><div class="grid three"><div class="card"><div class="sub">Practice accuracy</div><h2>76%</h2><div class="progress"><span style="width:76%"></span></div></div><div class="card"><div class="sub">Study streak</div><h2>5 days 🔥</h2><p class="sub">Keep a balanced routine.</p></div><div class="card"><div class="sub">Learning XP</div><h2>420</h2><p class="sub">Earned from sample activities.</p></div></div><div class="card" style="margin-top:14px"><h3>Suggested next step</h3><p class="muted">Review the questions you missed, then try a short topic quiz.</p><button class="action" onclick="showPage('practice')">Practice now</button></div></section>
  <section id="motivation" class="page"><div class="sectionhead"><h3>Motivation corner</h3><span class="sub">A thought for your journey</span></div><div class="quote"><b>✦ TODAY'S THOUGHT</b><p>“You do not have to be perfect today. Just take one honest step forward.”</p><small>Progress over pressure.</small></div><div class="grid three" style="margin-top:14px"><div class="card"><h3>🌱 Start small</h3><p class="muted">One focused session is a meaningful beginning.</p></div><div class="card"><h3>🧭 Stay curious</h3><p class="muted">Questions are the beginning of understanding.</p></div><div class="card"><h3>🤝 Grow together</h3><p class="muted">Share ideas, respect others and learn as a team.</p></div></div></section>
@@ -2374,6 +2417,144 @@ async function loadStudyMaterials() {
     card.append(title, details, description, link,
       accessInfo, accessSelect, updateBtn, activeBtn);
 
+    list.appendChild(card);
+  });
+}
+ async function addStudyPYQ() {
+  const question = document.getElementById('pyqQuestion').value.trim();
+  const optionA = document.getElementById('pyqOptionA').value.trim();
+  const optionB = document.getElementById('pyqOptionB').value.trim();
+  const optionC = document.getElementById('pyqOptionC').value.trim();
+  const optionD = document.getElementById('pyqOptionD').value.trim();
+  const correct = document.getElementById('pyqCorrect').value;
+  const explanation = document.getElementById('pyqExplanation').value.trim();
+  const exam = document.getElementById('pyqExam').value.trim();
+  const year = document.getElementById('pyqYear').value.trim();
+  const classLevel = document.getElementById('pyqClass').value.trim();
+  const subject = document.getElementById('pyqSubject').value.trim();
+  const chapter = document.getElementById('pyqChapter').value.trim();
+  const msg = document.getElementById('pyqAdminMessage');
+
+  if (!question || !exam || !year || !subject) {
+    msg.textContent = 'Question, exam, year and subject are required.';
+    return;
+  }
+
+  msg.textContent = 'Saving PYQ...';
+
+  const { error } = await db.from('study_pyqs').insert({
+    question,
+    option_a: optionA,
+    option_b: optionB,
+    option_c: optionC,
+    option_d: optionD,
+    correct_option: correct,
+    explanation,
+    exam_name: exam,
+    exam_year: year,
+    class_level: classLevel,
+    subject,
+    chapter
+  });
+
+  if (error) {
+    msg.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  msg.textContent = 'PYQ added successfully!';
+
+  [
+    'pyqQuestion', 'pyqOptionA', 'pyqOptionB',
+    'pyqOptionC', 'pyqOptionD', 'pyqExplanation',
+    'pyqExam', 'pyqYear', 'pyqClass',
+    'pyqSubject', 'pyqChapter'
+  ].forEach(id => document.getElementById(id).value = '');
+
+  document.getElementById('pyqCorrect').value = '';
+
+  loadStudyPYQs();
+}
+
+async function loadStudyPYQs() {
+  const list = document.getElementById('adminPYQList');
+  const msg = document.getElementById('pyqAdminMessage');
+
+  list.textContent = 'Loading PYQs...';
+
+  const { data, error } = await db
+    .from('study_pyqs')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No PYQs added yet.';
+    return;
+  }
+
+  data.forEach(pyq => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const question = document.createElement('h4');
+    question.textContent = pyq.question;
+
+    const details = document.createElement('p');
+    details.textContent =
+      pyq.exam_name + ' | ' + pyq.exam_year +
+      ' | Class: ' + (pyq.class_level || 'N/A') +
+      ' | Subject: ' + pyq.subject +
+      ' | Chapter: ' + (pyq.chapter || 'N/A');
+
+    const options = document.createElement('p');
+    options.textContent =
+      'A: ' + pyq.option_a +
+      ' | B: ' + pyq.option_b +
+      ' | C: ' + pyq.option_c +
+      ' | D: ' + pyq.option_d;
+
+    const answer = document.createElement('p');
+    answer.textContent =
+      'Answer: ' + (pyq.correct_option || 'Not set');
+
+    const explanation = document.createElement('p');
+    explanation.textContent =
+      'Explanation: ' + (pyq.explanation || 'Not provided');
+
+    const status = document.createElement('p');
+    status.textContent =
+      'Status: ' + (pyq.is_published ? 'Published' : 'Draft');
+
+    const publishBtn = document.createElement('button');
+    publishBtn.className = 'action';
+    publishBtn.textContent = pyq.is_published
+      ? 'Unpublish PYQ'
+      : 'Publish PYQ';
+
+    publishBtn.onclick = async () => {
+      const { error } = await db
+        .from('study_pyqs')
+        .update({ is_published: !pyq.is_published })
+        .eq('id', pyq.id);
+
+      if (error) {
+        msg.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      msg.textContent = 'PYQ publication status updated!';
+      loadStudyPYQs();
+    };
+
+    card.append(question, details, options, answer, explanation, status, publishBtn);
     list.appendChild(card);
   });
 }
