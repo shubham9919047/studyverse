@@ -183,6 +183,20 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   <button class="action" onclick="loadAdminQuestions()">Refresh Questions</button>
 </div>
 
+  <div class="card">
+  <h3>👨‍🎓 Student Management</h3>
+  <p class="muted">View registered students and their profiles.</p>
+
+  <button class="action" onclick="loadAdminStudents()">
+    Load Students
+  </button>
+
+  <p id="studentAdminMessage" class="muted"></p>
+
+  <div id="adminStudentList">
+    <p class="muted">Student list will appear here.</p>
+  </div>
+</div> 
     <div class="card">
   <h3>🌟 Motivation Manager</h3>
   <p class="muted">Create and publish motivation posts.</p>
@@ -1422,6 +1436,61 @@ async function toggleAnnouncementPublish(id, publish) {
   }
 
   await loadAdminAnnouncements();
+}
+ async function loadAdminStudents() {
+  const list = document.getElementById("adminStudentList");
+  const message = document.getElementById("studentAdminMessage");
+
+  message.textContent = "Loading students...";
+
+  const { data: { user }, error: userError } = await db.auth.getUser();
+
+  if (userError || !user) {
+    message.textContent = "Please login first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("profiles")
+    .select("id, full_name, class_level, exam_target, membership, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    message.textContent = "Loading Error: " + error.message;
+    return;
+  }
+
+  message.textContent = "";
+
+  if (!data || data.length === 0) {
+    list.textContent = "No students found.";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(student => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+
+    const name = document.createElement("h4");
+    name.textContent = student.full_name || "Unnamed Student";
+
+    const classInfo = document.createElement("p");
+    classInfo.textContent = "Class: " + (student.class_level || "Not set");
+
+    const exam = document.createElement("p");
+    exam.textContent = "Target Exam: " + (student.exam_target || "Not set");
+
+    const membership = document.createElement("p");
+    membership.textContent = "Membership: " + (student.membership || "Free");
+
+    card.append(name, classInfo, exam, membership);
+    list.appendChild(card);
+  });
+
+  message.textContent = "Students loaded: " + data.length;
 }
 </script>
  
