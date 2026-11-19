@@ -161,6 +161,64 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     </div>
   </div>
 </section>
+ <section id="studytracker" class="page">
+  <div class="sectionhead">
+    <h3>Daily Study Tracker 📚</h3>
+    <span class="tag">Track your progress</span>
+  </div>
+
+  <div class="card">
+    <h3>Today's Study</h3>
+
+    <label class="sub">Study Minutes</label>
+    <input
+      type="number"
+      id="studyMinutes"
+      class="field"
+      min="0"
+      placeholder="Enter study minutes"
+    >
+
+    <label class="sub">Study Note</label>
+    <textarea
+      id="studyNote"
+      class="field"
+      placeholder="What did you study today?"
+    ></textarea>
+
+    <button class="action" onclick="saveStudyActivity()">
+      Save Today's Progress
+    </button>
+
+    <p id="studyTrackerMessage" class="sub"></p>
+  </div>
+
+  <div class="grid three">
+    <div class="card">
+      <h3>🔥 Study Streak</h3>
+      <div id="studyStreak">0 Days</div>
+    </div>
+
+    <div class="card">
+      <h3>⏱️ Today's Minutes</h3>
+      <div id="todayStudyTotal">0 Minutes</div>
+    </div>
+
+    <div class="card">
+      <h3>📈 Total Study</h3>
+      <div id="totalStudyMinutes">0 Minutes</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Study History</h3>
+    <button class="action" onclick="loadStudyTracker()">
+      Load Study History
+    </button>
+
+    <div id="studyHistoryList"></div>
+  </div>
+</section>
  <section id="community" class="page"><div class="sectionhead"><h3>Study community</h3><span class="tag">Safety-first concept</span></div><div class="grid two"><div class="card"><h3>Find your study room</h3><div class="listitem"><b>Class 9–10 Foundation</b><p class="sub">Concepts, school exams and practice</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>JEE Aspirants</b><p class="sub">Physics · Chemistry · Mathematics</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div><div class="listitem"><b>NEET Aspirants</b><p class="sub">Biology · Physics · Chemistry</p><button class="action" onclick="notify('Room preview only. Real chat requires verified accounts and moderation.')">Preview room</button></div></div><div class="card"><h3>Community guidelines</h3><p class="muted">Be kind, stay focused, protect your privacy.</p><ul><li>Use moderated topic-based study rooms.</li><li>Never share passwords, address or phone number publicly.</li><li>Report inappropriate messages and block unwanted contact.</li><li>For younger students, private messaging should be disabled by default.</li></ul><p class="sub">WhatsApp / Telegram invite links can be added by an administrator after safety and privacy review.</p></div></div></section>
  <section id="updates" class="page"><div class="sectionhead"><h3>Exam updates & calendar</h3><span class="tag">Sample entries</span></div><div class="card"><div class="listitem"><div class="row"><b>JEE Main</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://jeemain.nta.nic.in/" target="_blank" rel="noopener">Official JEE Main portal ↗</a></div><div class="listitem"><div class="row"><b>NEET UG</b><span class="tag">Official notice check</span></div><p class="sub">Application and exam dates: verify on the NTA official website before publishing.</p><a href="https://exams.nta.ac.in/NEET/" target="_blank" rel="noopener">Official NEET portal ↗</a></div><div class="listitem"><div class="row"><b>UPSC</b><span class="tag">Official calendar</span></div><p class="sub">Check the latest notification and annual calendar.</p><a href="https://upsc.gov.in/" target="_blank" rel="noopener">Official UPSC portal ↗</a></div><p class="sub">A live alert system needs an admin verification workflow and scheduled official-source checks.</p></div></section>
 <section id="myprofile" class="page">
@@ -3598,6 +3656,155 @@ async function deleteStudyEvent(id) {
 }
  document.getElementById('studyplanner')
   ?.addEventListener('click', loadStudentStudyEvents);
+ function getStudyLocalDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+async function saveStudyActivity() {
+  const minutes = Number(document.getElementById('studyMinutes').value);
+  const note = document.getElementById('studyNote').value.trim();
+  const message = document.getElementById('studyTrackerMessage');
+
+  if (!Number.isInteger(minutes) || minutes < 0) {
+    message.textContent = 'Please enter valid study minutes.';
+    return;
+  }
+
+  const { data: { user } } = await db.auth.getUser();
+
+  if (!user) {
+    message.textContent = 'Please login first.';
+    return;
+  }
+
+  message.textContent = 'Saving...';
+
+  const today = getStudyLocalDate();
+
+  const { error } = await db
+    .from('study_activity')
+    .upsert({
+      user_id: user.id,
+      activity_date: today,
+      study_minutes: minutes,
+      activity_note: note
+    }, {
+      onConflict: 'user_id,activity_date'
+    });
+
+  if (error) {
+    message.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  message.textContent = 'Study progress saved successfully!';
+  await loadStudyTracker();
+}
+
+async function loadStudyTracker() {
+  const history = document.getElementById('studyHistoryList');
+
+  history.textContent = 'Loading study history...';
+
+  const { data: { user } } = await db.auth.getUser();
+
+  if (!user) {
+    history.textContent = 'Please login first.';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('study_activity')
+    .select('activity_date,study_minutes,activity_note')
+    .eq('user_id', user.id)
+    .order('activity_date', { ascending: false });
+
+  if (error) {
+    history.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  const records = data || [];
+  const today = getStudyLocalDate();
+
+  const todayRecord = records.find(r => r.activity_date === today);
+
+  document.getElementById('todayStudyTotal').textContent =
+    (todayRecord ? todayRecord.study_minutes : 0) + ' Minutes';
+
+  document.getElementById('studyMinutes').value =
+    todayRecord ? todayRecord.study_minutes : '';
+
+  document.getElementById('studyNote').value =
+    todayRecord ? todayRecord.activity_note || '' : '';
+
+  const total = records.reduce(
+    (sum, r) => sum + Number(r.study_minutes || 0), 0
+  );
+
+  document.getElementById('totalStudyMinutes').textContent =
+    total + ' Minutes';
+
+  let streak = 0;
+
+  if (records.length > 0) {
+    const dates = new Set(records.map(r => r.activity_date));
+    const cursor = new Date(today + 'T12:00:00');
+
+    if (!dates.has(today)) {
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    while (true) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, '0');
+      const d = String(cursor.getDate()).padStart(2, '0');
+      const dateString = `${y}-${m}-${d}`;
+
+      if (!dates.has(dateString)) break;
+
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+  }
+
+  document.getElementById('studyStreak').textContent =
+    streak + ' Days';
+
+  history.textContent = '';
+
+  if (records.length === 0) {
+    history.textContent = 'No study history yet.';
+    return;
+  }
+
+  records.forEach(record => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const date = document.createElement('h4');
+    date.textContent = record.activity_date;
+
+    const mins = document.createElement('p');
+    mins.textContent = record.study_minutes + ' Minutes';
+
+    const note = document.createElement('p');
+    note.textContent = record.activity_note || 'No study note';
+
+    card.append(date, mins, note);
+    history.appendChild(card);
+  });
+}
+
+document.getElementById('studytracker')
+  .addEventListener('click', function(e) {
+    if (e.target.closest('button')) return;
+    loadStudyTracker();
+  });
 </script>
  
 <!-- END SUPABASE CONNECTION -->
