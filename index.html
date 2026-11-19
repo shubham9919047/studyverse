@@ -1337,7 +1337,23 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </main></div><div class="toast" id="toast"></div>
 <script>
 const titles={home:"Good morning, Learner 👋",classes:"Classes & Competition Exams",practice:"PYQ & Practice Zone",games:"Study Games",leaderboard:"Student Leaderboard",community:"Study Community",updates:"Exam Updates",progress:"My Progress",motivation:"Motivation Corner"};
-function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));document.getElementById('pageTitle').textContent=titles[id];if(id==='home'){loadDashboardXP();loadDashboardStreak();}window.scrollTo(0,0)}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  document.getElementById('pageTitle').textContent=titles[id];
+
+  if(id==='home'){
+    loadDashboardXP();
+    loadDashboardStreak();
+  }
+
+  if(id==='studyplanner'){
+    loadStudyEventsStudent();
+  }
+
+  window.scrollTo(0,0);
+}
 function notify(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
 const tracks=[["Class 5–8","School foundations","📗"],["Class 9–10","Boards & foundation","📘"],["Class 11–12","Science, Commerce & Arts","🎓"],["JEE","Main & Advanced","⚛️"],["NEET","Medical entrance","🧬"],["NDA","Defence entrance","🛡️"],["CUET","University entrance","🏛️"],["UPSC","Civil services","📜"],["Other Exams","State & central exams","🌐"]];
 document.getElementById('trackGrid').innerHTML=tracks.map(t=>`<div class="card tile"><div class="tileicon">${t[2]}</div><div><h3 style="margin:0">${t[0]}</h3><p class="sub">${t[1]}</p><button class="action" onclick="notify('This learning track will be configured in the full platform.')">Open track</button></div></div>`).join('');
