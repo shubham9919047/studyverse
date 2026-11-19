@@ -97,6 +97,15 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     </button>
 
     <div id="studentQuizArea"></div>
+   <div class="card">
+  <h3>📊 My Quiz Results</h3>
+
+  <button class="action" onclick="loadMyQuizResults()">
+    Load My Results
+  </button>
+
+  <div id="myQuizResultsList"></div>
+</div>
   </div>
 </section>
  <section id="games" class="page"><div class="sectionhead"><h3>Study games</h3><span class="sub">Quick brain breaks with learning</span></div><div class="grid three"><div class="card"><div class="tileicon">🔢</div><h3>Number Sprint</h3><p class="muted">Solve a quick mental maths challenge.</p><button class="action" onclick="mathGame()">Start game</button><p id="gameout"></p></div><div class="card"><div class="tileicon">🧠</div><h3>Concept Match</h3><p class="muted">Match concepts with their subjects.</p><button class="action" onclick="notify('Concept Match demo is ready for the next build.')">Play demo</button></div><div class="card"><div class="tileicon">🌍</div><h3>GK Challenge</h3><p class="muted">Build everyday awareness.</p><button class="action" onclick="notify('GK Challenge content will be added in the content dashboard.')">Play demo</button></div></div></section>
@@ -4161,7 +4170,7 @@ function renderStudentQuizQuestion() {
   area.appendChild(nextButton);
 }
 
-function finishStudentQuiz() {
+async function finishStudentQuiz() {
   const area = document.getElementById('studentQuizArea');
   area.textContent = '';
 
@@ -4173,12 +4182,84 @@ function finishStudentQuiz() {
     'Your Score: ' + studentQuizScore +
     ' / ' + studentQuizQuestions.length;
 
+  area.append(heading, result);
+
+  const { data: { user } } = await db.auth.getUser();
+
+  if (user) {
+    const { error } = await db.from('quiz_attempts').insert({
+      user_id: user.id,
+      quiz_type: 'practice',
+      total_questions: studentQuizQuestions.length,
+      score: studentQuizScore
+    });
+
+    const saveMessage = document.createElement('p');
+    saveMessage.textContent = error
+      ? 'Result save error: ' + error.message
+      : 'Your result has been saved!';
+
+    area.appendChild(saveMessage);
+  }
+
   const restart = document.createElement('button');
   restart.className = 'action';
   restart.textContent = 'Play Again';
   restart.onclick = startStudentQuiz;
 
-  area.append(heading, result, restart);
+  area.appendChild(restart);
+}
+
+async function loadMyQuizResults() {
+  const list = document.getElementById('myQuizResultsList');
+  list.textContent = 'Loading results...';
+
+  const { data: { user } } = await db.auth.getUser();
+
+  if (!user) {
+    list.textContent = 'Please login first.';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('quiz_attempts')
+    .select('score,total_questions,attempted_at,quiz_type')
+    .eq('user_id', user.id)
+    .order('attempted_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  list.textContent = '';
+
+  if (!data || data.length === 0) {
+    list.textContent = 'No quiz results yet.';
+    return;
+  }
+
+  data.forEach((attempt, index) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const title = document.createElement('h4');
+    title.textContent = 'Attempt #' + (index + 1);
+
+    const score = document.createElement('p');
+    score.textContent =
+      'Score: ' + attempt.score + ' / ' + attempt.total_questions;
+
+    const type = document.createElement('p');
+    type.textContent = 'Type: ' + attempt.quiz_type;
+
+    const date = document.createElement('p');
+    date.textContent =
+      'Date: ' + new Date(attempt.attempted_at).toLocaleString();
+
+    card.append(title, score, type, date);
+    list.appendChild(card);
+  });
 }
 </script>
  
