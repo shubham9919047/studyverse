@@ -212,7 +212,38 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
     </div>
   </div>
 </section>
- 
+ <section id="studentrewards" class="page">
+  <div class="sectionhead">
+    <h3>🏆 My Rewards & XP</h3>
+    <span class="sub">Track your learning achievements</span>
+  </div>
+
+  <div class="grid three">
+    <div class="card">
+      <h3>⭐ Total XP</h3>
+      <h2 id="myRewardXP">0 XP</h2>
+    </div>
+
+    <div class="card">
+      <h3>🎯 My Level</h3>
+      <h2 id="myRewardLevel">Level 1</h2>
+    </div>
+
+    <div class="card">
+      <h3>🏅 Badges</h3>
+      <h2 id="myRewardBadgeCount">0</h2>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="action" onclick="loadMyRewards()">
+      Load My Rewards
+    </button>
+
+    <div id="myRewardBadgesList"></div>
+    <p id="myRewardMessage" class="muted"></p>
+  </div>
+</section>
  <section id="assignments" class="page">
   <div class="sectionhead">
     <h3>📚 My Assignments</h3>
@@ -5243,6 +5274,64 @@ async function loadAdminRewards() {
     card.append(heading, xp, level, badges);
     container.appendChild(card);
   });
+}
+ async function loadMyRewards() {
+  const xpElement = document.getElementById('myRewardXP');
+  const levelElement = document.getElementById('myRewardLevel');
+  const badgeCountElement = document.getElementById('myRewardBadgeCount');
+  const badgeContainer = document.getElementById('myRewardBadgesList');
+  const message = document.getElementById('myRewardMessage');
+
+  message.textContent = 'Loading rewards...';
+
+  const { data: userData, error: userError } = await db.auth.getUser();
+
+  if (userError || !userData.user) {
+    message.textContent = 'Please login first.';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('study_rewards')
+    .select('xp_points,level,badges')
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (error) {
+    message.textContent = 'Loading error: ' + error.message;
+    return;
+  }
+
+  if (!data) {
+    xpElement.textContent = '0 XP';
+    levelElement.textContent = 'Level 1';
+    badgeCountElement.textContent = '0';
+    badgeContainer.textContent = 'No badges earned yet.';
+    message.textContent = 'Start learning to earn rewards!';
+    return;
+  }
+
+  xpElement.textContent = (data.xp_points || 0) + ' XP';
+  levelElement.textContent = 'Level ' + (data.level || 1);
+
+  const badges = Array.isArray(data.badges) ? data.badges : [];
+
+  badgeCountElement.textContent = badges.length;
+  badgeContainer.replaceChildren();
+
+  if (badges.length === 0) {
+    badgeContainer.textContent = 'No badges earned yet.';
+  } else {
+    badges.forEach(badgeName => {
+      const badge = document.createElement('div');
+      badge.className = 'card';
+      badge.style.marginTop = '10px';
+      badge.textContent = '🏅 ' + badgeName;
+      badgeContainer.appendChild(badge);
+    });
+  }
+
+  message.textContent = 'Rewards loaded successfully!';
 }
 </script>
  
