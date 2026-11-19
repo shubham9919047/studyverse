@@ -54,35 +54,200 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   <div class="sub" id="studentClass">Loading profile...</div>
 </div></div></div>
  <section id="home" class="page active">
-  <div class="hero"><div><span class="pill">✦ YOUR NEXT CHAPTER STARTS HERE</span><h2>Small steps today.<br>Big achievements tomorrow.</h2><p>Practice smarter, meet study partners and track your learning journey — all in one place.</p><button class="primary" onclick="showPage('practice')">Start practicing →</button></div><div class="heroart">🎓📚</div></div>
-  <div class="grid stats">
-   <div class="card stat"><div class="staticon">⚡</div><div><strong>420</strong><small>Learning XP</small></div></div>
-   <div class="card stat"><div class="staticon">📝</div><div><strong>08</strong><small>Quizzes completed</small></div></div>
-   <div class="card stat"><div class="staticon">🎯</div><div><strong>76%</strong><small>Accuracy</small></div></div>
-   <div class="card stat"><div class="staticon">🏆</div><div><strong>#128</strong><small>Demo cohort rank</small></div></div>
-  </div>
-  <div class="grid two">
-   <div><div class="sectionhead"><h3>Pick up where you left off</h3><span class="sub">Your learning path</span></div>
-    <div class="card"><div class="tile"><div class="tileicon">⚛️</div><div style="flex:1"><h4>Physics · Motion in a Straight Line</h4><p>Continue your concept practice</p><div class="progress"><span style="width:68%"></span></div><small class="muted">68% completed</small></div></div><button class="action" onclick="showPage('practice')">Continue learning</button></div>
-    <div class="sectionhead"><h3>Explore your universe</h3></div>
-    <div class="grid three">
-     <div class="card tile"><div class="tileicon">📘</div><div><h4>PYQ Bank</h4><p>Exam-wise practice</p><button class="action" onclick="showPage('practice')">Explore</button></div></div>
-     <div class="card tile"><div class="tileicon">🧩</div><div><h4>Brain Games</h4><p>Learn by playing</p><button class="action" onclick="showPage('games')">Play</button></div></div>
-     <div class="card tile"><div class="tileicon">👥</div><div><h4>Study Rooms</h4><p>Learn with peers</p><button class="action" onclick="showPage('community')">Visit</button></div></div>
+
+  <!-- Welcome Dashboard -->
+  <div style="background:linear-gradient(135deg,#172554,#4f46e5,#7c3aed);color:white;padding:28px;border-radius:22px;margin-bottom:22px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px">
+
+    <div style="flex:1;min-width:220px">
+      <span style="background:#ffffff22;padding:8px 12px;border-radius:20px;font-size:12px">
+        ✦ STUDYVERSE LEARNING HUB
+      </span>
+
+      <h2 style="font-size:clamp(24px,5vw,38px);margin-top:18px">
+        Welcome to your learning journey! 🚀
+      </h2>
+
+      <p style="line-height:1.7;color:#e0e7ff">
+        Learn concepts, practice questions, track progress and move closer to your goals.
+      </p>
+
+      <button class="primary" onclick="showPage('practice')">
+        Start Learning →
+      </button>
     </div>
-   </div>
-  <div class="sectionhead">
-  <h3>Community highlights</h3>
-  <span class="sub">Live leaderboard</span>
-</div>
-<div class="card">
-  <p class="muted">Visit the Leaderboard to see current rankings.</p>
-  <button class="action" onclick="showPage('leaderboard')">View leaderboard</button>
-</div>
-    <div class="sectionhead"><h3>Thought for today</h3></div><div class="quote"><b>✦ A LITTLE REMINDER</b><p>“Consistency turns small efforts into remarkable progress.”</p><small>Keep showing up for your goals.</small></div>
-   </div>
+
+    <div style="font-size:clamp(55px,10vw,90px);text-align:center">
+      🎓📚
+    </div>
   </div>
- </section>
+
+  <!-- Stats -->
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+
+    <div class="card stat">
+      <div class="staticon">⚡</div>
+      <div>
+        <strong>420</strong>
+        <small>Demo XP</small>
+      </div>
+    </div>
+
+    <div class="card stat">
+      <div class="staticon">📝</div>
+      <div>
+        <strong>08</strong>
+        <small>Demo Quizzes</small>
+      </div>
+    </div>
+
+    <div class="card stat">
+      <div class="staticon">🎯</div>
+      <div>
+        <strong>76%</strong>
+        <small>Demo Accuracy</small>
+      </div>
+    </div>
+
+    <div class="card stat">
+      <div class="staticon">🏆</div>
+      <div>
+        <strong>#128</strong>
+        <small>Demo Rank</small>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Continue Learning -->
+  <div class="sectionhead" style="margin-top:26px">
+    <h3>📖 Continue Learning</h3>
+    <span class="sub">Keep moving forward</span>
+  </div>
+
+  <div class="card">
+    <div class="tile">
+      <div class="tileicon">⚛️</div>
+
+      <div style="flex:1;min-width:0">
+        <h4>Physics — Motion</h4>
+        <p>Continue your Physics practice</p>
+
+        <div class="progress">
+          <span style="width:68%"></span>
+        </div>
+
+        <small class="muted">Demo progress: 68%</small>
+      </div>
+    </div>
+
+    <button class="action" onclick="showPage('practice')">
+      Continue Practice →
+    </button>
+  </div>
+
+  <!-- Quick Access -->
+  <div class="sectionhead" style="margin-top:26px">
+    <h3>🚀 Quick Access</h3>
+    <span class="sub">Explore Studyverse</span>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+
+    <div class="card">
+      <h3>📚 Study Materials</h3>
+      <p class="muted">Notes and learning resources</p>
+      <button class="action" onclick="showPage('materials')">
+        Open Materials
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>🎥 Video Lectures</h3>
+      <p class="muted">Learn through video lessons</p>
+      <button class="action" onclick="showPage('studentvideos')">
+        Watch Lectures
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>📝 Mock Tests</h3>
+      <p class="muted">Practice exam-style tests</p>
+      <button class="action" onclick="showPage('mocktestportal')">
+        Start Tests
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>❓ Ask a Doubt</h3>
+      <p class="muted">Get help with your questions</p>
+      <button class="action" onclick="showPage('studentdoubts')">
+        Ask Doubt
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>🧩 Brain Games</h3>
+      <p class="muted">Challenge your mind</p>
+      <button class="action" onclick="showPage('games')">
+        Play Games
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>🏆 My Rewards</h3>
+      <p class="muted">Explore XP and badges</p>
+      <button class="action" onclick="showPage('studentrewards')">
+        View Rewards
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>📊 Leaderboard</h3>
+      <p class="muted">Explore learning rankings</p>
+      <button class="action" onclick="showPage('leaderboard')">
+        View Ranking
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>🔔 Notifications</h3>
+      <p class="muted">Stay updated</p>
+      <button class="action" onclick="showPage('studentnotifications')">
+        View Updates
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Daily Motivation -->
+  <div class="sectionhead" style="margin-top:26px">
+    <h3>🌟 Daily Motivation</h3>
+  </div>
+
+  <div class="quote">
+    <b>✦ YOUR DAILY REMINDER</b>
+    <p>
+      "Consistency turns small efforts into remarkable progress."
+    </p>
+    <small>Keep showing up for your goals.</small>
+  </div>
+
+  <!-- Community -->
+  <div class="sectionhead" style="margin-top:26px">
+    <h3>👥 Community</h3>
+  </div>
+
+  <div class="card">
+    <p class="muted">
+      Connect with learners and explore the Studyverse community.
+    </p>
+
+    <button class="action" onclick="showPage('community')">
+      Explore Community →
+    </button>
+  </div>
+
+</section>
  <section id="classes" class="page">
   <div class="sectionhead">
     <h3>Choose your learning track</h3>
