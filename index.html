@@ -1449,8 +1449,7 @@ function openChapter(subject,chapter){
   document.getElementById('chapterContentTitle').textContent=
     subject+' - '+chapter;
 
-  document.getElementById('chapterNotes').innerHTML=
-    '<p class="muted">Notes and PDF materials will appear here.</p>';
+  loadChapterMaterials(subject, chapter);
 
   document.getElementById('chapterVideos').innerHTML=
     '<p class="muted">Video lectures will appear here.</p>';
@@ -3306,6 +3305,50 @@ async function loadStudyMaterials() {
       accessInfo, accessSelect, updateBtn, activeBtn);
 
     list.appendChild(card);
+  });
+}
+ async function loadChapterMaterials(subject, chapter) {
+  const box = document.getElementById('chapterNotes');
+
+  box.textContent = 'Loading chapter materials...';
+
+  const { data, error } = await db
+    .from('study_materials')
+    .select('*')
+    .eq('subject', subject)
+    .eq('chapter', chapter)
+    .eq('is_active', true);
+
+  if (error) {
+    box.textContent = 'Error loading materials: ' + error.message;
+    return;
+  }
+
+  box.replaceChildren();
+
+  if (!data || data.length === 0) {
+    box.textContent = 'No materials available for this chapter yet.';
+    return;
+  }
+
+  data.forEach(material => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const title = document.createElement('h4');
+    title.textContent = material.title;
+
+    const description = document.createElement('p');
+    description.textContent = material.description || '';
+
+    const link = document.createElement('a');
+    link.href = material.file_url;
+    link.textContent = '📖 Open PDF / Material';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+
+    card.append(title, description, link);
+    box.appendChild(card);
   });
 }
  async function addStudyPYQ() {
