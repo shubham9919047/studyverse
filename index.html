@@ -255,6 +255,49 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
   </div>
 
   <div class="grid three" id="trackGrid"></div>
+  <div id="trackDetailPanel" class="card" style="display:none;margin-top:20px">
+  <h3 id="trackDetailTitle">Subjects</h3>
+  <div id="trackSubjectList" class="grid three"></div>
+</div>
+  <div id="chapterDetailPanel" class="card" style="display:none;margin-top:20px">
+  <h3 id="chapterDetailTitle">Chapters</h3>
+  <div id="chapterList" class="grid three"></div>
+</div>
+  <div id="chapterContentPanel" class="card" style="display:none;margin-top:20px">
+  <h3 id="chapterContentTitle">Chapter Learning</h3>
+
+  <div class="grid three">
+    <div class="card tile">
+      <h3>📝 Notes & PDF</h3>
+      <div id="chapterNotes"></div>
+    </div>
+
+    <div class="card tile">
+      <h3>🎥 Video Lectures</h3>
+      <div id="chapterVideos"></div>
+    </div>
+
+    <div class="card tile">
+      <h3>🧠 Quiz & Practice</h3>
+      <div id="chapterQuiz"></div>
+    </div>
+
+    <div class="card tile">
+      <h3>📄 Previous Year Questions</h3>
+      <div id="chapterPYQ"></div>
+    </div>
+
+    <div class="card tile">
+      <h3>📝 Chapter Test</h3>
+      <div id="chapterTest"></div>
+    </div>
+
+    <div class="card tile">
+      <h3>🔗 Important Links</h3>
+      <div id="chapterLinks"></div>
+    </div>
+  </div>
+</div>
 
   <div class="sectionhead" style="margin-top:24px">
     <h3>📚 Course Learning Portal</h3>
@@ -1287,11 +1330,136 @@ const titles={home:"Good morning, Learner 👋",classes:"Classes & Competition E
 function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));document.getElementById('pageTitle').textContent=titles[id];window.scrollTo(0,0)}
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 function notify(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
-const tracks=[["Class 5–8","School foundations","📗"],["Class 9–10","Boards & foundation","📘"],["Class 11–12","Science, Commerce & Arts","🎓"],["JEE","Main & Advanced","⚛️"],["NEET","Medical entrance","🧬"],["NDA","Defence entrance","🛡️"],["CUET","University entrance","🏛️"],["UPSC","Civil services","📜"],["Other Exams","State & central exams","🌐"]];
-document.getElementById('trackGrid').innerHTML=tracks.map(t=>`<div class="card tile"><div class="tileicon">${t[2]}</div><div><h3 style="margin:0">${t[0]}</h3><p class="sub">${t[1]}</p><button class="action" onclick="notify('This learning track will be configured in the full platform.')">Open track</button></div></div>`).join('');
+const tracks=[
+["Class 5–8","School foundations","📗"],
+["Class 9–10","Boards & foundation","📘"],
+["Class 11–12","Science, Commerce & Arts","🎓"],
+["JEE","Main & Advanced","⚛️"],
+["NEET","Medical entrance","🧬"],
+["NDA","Defence entrance","🛡️"],
+["CUET","University entrance","🏛️"],
+["UPSC","Civil services","📜"],
+["Other Exams","State & central exams","🌐"]
+];
+
+document.getElementById('trackGrid').innerHTML=tracks.map((t,i)=>`
+<div class="card tile">
+  <div class="tileicon">${t[2]}</div>
+  <div>
+    <h3 style="margin:0">${t[0]}</h3>
+    <p class="sub">${t[1]}</p>
+    <button class="action" onclick="openTrack(${i})">Open track</button>
+  </div>
+</div>
+`).join('');
 const qs=[{q:"A body starts from rest and moves with uniform acceleration. Which equation gives its velocity after time t?",o:["v = u + at","s = ut + ½at²","v² = u² + 2as","F = ma"],a:0,e:"For uniform acceleration, final velocity v = u + at."},{q:"The SI unit of force is:",o:["Joule","Newton","Watt","Pascal"],a:1,e:"Force is measured in newtons (N)."}];let qi=0;
  let totalCorrect=0;
 let totalAttempted=0;
+const trackSubjects={
+  "Class 5–8":["Maths","Science","English","Hindi","Social Science"],
+  "Class 9–10":["Maths","Science","English","Hindi","Social Science"],
+  "Class 11–12":["Physics","Chemistry","Maths","Biology","English","Accountancy","Economics"],
+  "JEE":["Physics","Chemistry","Mathematics"],
+  "NEET":["Physics","Chemistry","Biology"],
+  "NDA":["Maths","Physics","English","General Knowledge"],
+  "CUET":["English","General Test","Domain Subjects"],
+  "UPSC":["History","Geography","Polity","Economics","Science","Current Affairs"],
+  "Other Exams":["General Studies","Maths","Science","English"]
+};
+
+function openTrack(index){
+  const track=tracks[index];
+  const panel=document.getElementById('trackDetailPanel');
+  const title=document.getElementById('trackDetailTitle');
+  const list=document.getElementById('trackSubjectList');
+
+  panel.style.display='block';
+  title.textContent=track[0]+' - Subjects';
+
+  const subjects=trackSubjects[track[0]]||[];
+
+  list.innerHTML=subjects.map(s=>`
+    <div class="card tile">
+      <h3>${s}</h3>
+      <button class="action" onclick="openSubject('${s}')">
+        Open Subject
+      </button>
+    </div>
+  `).join('');
+
+  panel.scrollIntoView({behavior:'smooth'});
+}
+
+const subjectChapters={
+  "Physics":["Units and Dimensions","Motion","Laws of Motion","Work Power Energy","Gravitation"],
+  "Chemistry":["Atomic Structure","Periodic Table","Chemical Bonding","Thermodynamics","Organic Chemistry"],
+  "Mathematics":["Sets","Quadratic Equations","Trigonometry","Limits","Differentiation"],
+  "Maths":["Number System","Algebra","Geometry","Trigonometry"],
+  "Science":["Physics","Chemistry","Biology"],
+  "Biology":["Cell","Human Physiology","Genetics","Ecology"],
+  "English":["Grammar","Reading","Writing"],
+  "Hindi":["Grammar","Literature"],
+  "Social Science":["History","Geography","Civics","Economics"],
+  "Accountancy":["Accounting Basics","Journal","Ledger"],
+  "Economics":["Microeconomics","Macroeconomics"],
+  "General Test":["Reasoning","General Knowledge","Quantitative Aptitude"],
+  "History":["Ancient History","Medieval History","Modern History"],
+  "Geography":["Physical Geography","Indian Geography","World Geography"],
+  "Polity":["Constitution","Fundamental Rights","Parliament"],
+  "Current Affairs":["National","International","Science and Technology"],
+  "General Studies":["History","Geography","Polity","Economics"],
+  "Domain Subjects":["Subject Topics"],
+  "General Knowledge":["History","Geography","Current Affairs"]
+};
+
+function openSubject(subject){
+  const panel=document.getElementById('chapterDetailPanel');
+  const title=document.getElementById('chapterDetailTitle');
+  const list=document.getElementById('chapterList');
+
+  panel.style.display='block';
+  title.textContent=subject+' - Chapters';
+
+  const chapters=subjectChapters[subject]||["Chapter 1","Chapter 2","Chapter 3"];
+
+  list.innerHTML=chapters.map(ch=>`
+    <div class="card tile">
+      <h3>${ch}</h3>
+      <button class="action" onclick="openChapter('${subject}','${ch}')">
+        Open Chapter
+      </button>
+    </div>
+  `).join('');
+
+  panel.scrollIntoView({behavior:'smooth'});
+}
+ function openChapter(subject,chapter){
+  const panel=document.getElementById('chapterContentPanel');
+
+  document.getElementById('chapterContentTitle').textContent=
+    subject+' - '+chapter;
+
+  document.getElementById('chapterNotes').innerHTML=
+    '<p class="muted">Notes and PDF materials will appear here.</p>';
+
+  document.getElementById('chapterVideos').innerHTML=
+    '<p class="muted">Video lectures will appear here.</p>';
+
+  document.getElementById('chapterQuiz').innerHTML=
+    '<p class="muted">Quiz and practice questions will appear here.</p>';
+
+  document.getElementById('chapterPYQ').innerHTML=
+    '<p class="muted">Previous year questions will appear here.</p>';
+
+  document.getElementById('chapterTest').innerHTML=
+    '<p class="muted">Chapter tests will appear here.</p>';
+
+  document.getElementById('chapterLinks').innerHTML=
+    '<p class="muted">Important links will appear here.</p>';
+
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth'});
+}
 function renderQ(){let q=qs[qi];document.getElementById('qtext').textContent=q.q;document.getElementById('feedback').textContent='';document.getElementById('opts').innerHTML=q.o.map((x,i)=>`<button class="quizopt" onclick="answer(${i})">${String.fromCharCode(65+i)}. ${x}</button>`).join('')}
 function updateQuizStats() {
   const accuracy = totalAttempted
