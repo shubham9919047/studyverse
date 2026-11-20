@@ -1335,7 +1335,35 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 </main></div><div class="toast" id="toast"></div>
 <script>
 const titles={home:"Good morning, Learner 👋",classes:"Classes & Competition Exams",practice:"PYQ & Practice Zone",games:"Study Games",leaderboard:"Student Leaderboard",community:"Study Community",updates:"Exam Updates",progress:"My Progress",motivation:"Motivation Corner"};
-function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));document.getElementById('pageTitle').textContent=titles[id];window.scrollTo(0,0)}
+let pageHistory = [];
+
+function showPage(id, saveHistory = true) {
+  const currentPage = document.querySelector('.page.active');
+
+  if (saveHistory && currentPage && currentPage.id !== id) {
+    pageHistory.push(currentPage.id);
+  }
+
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+
+  document.getElementById(id).classList.add('active');
+
+  document.querySelectorAll('[data-page]').forEach(x =>
+    x.classList.toggle('active', x.dataset.page === id)
+  );
+
+  document.getElementById('pageTitle').textContent = titles[id];
+
+  window.scrollTo(0, 0);
+}
+
+function goBackPage() {
+  const previousPage = pageHistory.pop();
+
+  if (previousPage) {
+    showPage(previousPage, false);
+  }
+}
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 function notify(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
 const tracks=[
