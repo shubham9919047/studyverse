@@ -3359,6 +3359,43 @@ async function loadStudyMaterials() {
     box.appendChild(card);
   });
 }
+ async function uploadStudyPDF() {
+  const file = document.getElementById('materialPdfFile').files[0];
+  const msg = document.getElementById('pdfUploadMessage');
+  const urlInput = document.getElementById('materialUrl');
+
+  if (!file) {
+    msg.textContent = 'Please choose a PDF file first.';
+    return;
+  }
+
+  if (file.type !== 'application/pdf') {
+    msg.textContent = 'Please select a PDF file only.';
+    return;
+  }
+
+  msg.textContent = 'Uploading PDF...';
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = Date.now() + '_' + safeName;
+
+  const { data, error } = await db.storage
+    .from('studyverse-pdfs')
+    .upload(filePath, file);
+
+  if (error) {
+    msg.textContent = 'Upload failed: ' + error.message;
+    return;
+  }
+
+  const { data: urlData } = db.storage
+    .from('studyverse-pdfs')
+    .getPublicUrl(data.path);
+
+  urlInput.value = urlData.publicUrl;
+
+  msg.textContent = 'PDF uploaded successfully! URL added automatically.';
+}
  async function addStudyPYQ() {
   const question = document.getElementById('pyqQuestion').value.trim();
   const optionA = document.getElementById('pyqOptionA').value.trim();
