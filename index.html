@@ -388,40 +388,42 @@ textarea:focus {
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+ <!-- Stats -->
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
 
-    <div class="card stat">
-      <div class="staticon">⚡</div>
-      <div>
-       <strong id="dashboardXP">0</strong>
-<small>My Learning XP</small>
-      </div>
+  <div class="card stat">
+    <div class="staticon">⚡</div>
+    <div>
+      <strong id="dashboardXP">0</strong>
+      <small>My Learning XP</small>
     </div>
+  </div>
 
-    <div class="card stat">
-      <div class="staticon">📝</div>
-      <div>
-        <strong>08</strong>
-        <small>Demo Quizzes</small>
-      </div>
+  <div class="card stat">
+    <div class="staticon">📝</div>
+    <div>
+      <strong id="dashboardQuizCount">0</strong>
+      <small>Quizzes Completed</small>
     </div>
+  </div>
 
-    <div class="card stat">
-      <div class="staticon">🎯</div>
-      <div>
-        <strong>76%</strong>
-        <small>Demo Accuracy</small>
-      </div>
+  <div class="card stat">
+    <div class="staticon">🎯</div>
+    <div>
+      <strong id="dashboardAccuracy">—</strong>
+      <small>Quiz Accuracy</small>
     </div>
+  </div>
 
-    <div class="card stat">
-      <div class="staticon">🏆</div>
-      <div>
-        <strong>#128</strong>
-        <small>Demo Rank</small>
-      </div>
+  <div class="card stat">
+    <div class="staticon">🏆</div>
+    <div>
+      <strong id="dashboardRank">—</strong>
+      <small>My Rank</small>
     </div>
+  </div>
+
+</div>
 
   </div>
 
@@ -1661,6 +1663,7 @@ function showPage(id, saveHistory = true) {
   );
 
   document.getElementById('pageTitle').textContent = titles[id];
+ if (id === 'dashboard') updateDashboardStats();
 
   window.scrollTo(0, 0);
 }
@@ -6198,6 +6201,42 @@ async function loadAdminRewards() {
   xpElement.textContent = data
     ? data.xp_points
     : '0';
+}
+ async function updateDashboardStats() {
+  const quizEl = document.getElementById('dashboardQuizCount');
+  const accuracyEl = document.getElementById('dashboardAccuracy');
+
+  if (!quizEl || !accuracyEl) return;
+
+  const { data: userData, error: userError } = await db.auth.getUser();
+
+  if (userError || !userData.user) {
+    quizEl.textContent = '0';
+    accuracyEl.textContent = '—';
+    return;
+  }
+
+  const userId = userData.user.id;
+
+  const { data, error } = await db
+    .from('quiz_attempts')
+    .select('is_correct')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.log('Quiz stats error:', error.message);
+    return;
+  }
+
+  const attempts = data || [];
+  const total = attempts.length;
+  const correct = attempts.filter(x => x.is_correct === true).length;
+
+  quizEl.textContent = total;
+
+  accuracyEl.textContent = total
+    ? Math.round((correct / total) * 100) + '%'
+    : '—';
 }
 </script>
  
