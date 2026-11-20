@@ -1367,29 +1367,33 @@ const trackSubjects={
   "Other Exams":["General Studies","Maths","Science","English"]
 };
 
-function openTrack(index){
-  const track=tracks[index];
-  const panel=document.getElementById('trackDetailPanel');
-  const title=document.getElementById('trackDetailTitle');
-  const list=document.getElementById('trackSubjectList');
+function openChapter(subject,chapter){
+  const panel=document.getElementById('chapterContentPanel');
+
+  document.getElementById('chapterContentTitle').textContent=
+    subject+' - '+chapter;
+
+  document.getElementById('chapterNotes').innerHTML=
+    '<p class="muted">Notes and PDF materials will appear here.</p>';
+
+  document.getElementById('chapterVideos').innerHTML=
+    '<p class="muted">Video lectures will appear here.</p>';
+
+  document.getElementById('chapterQuiz').innerHTML=
+    '<p class="muted">Quiz and practice questions will appear here.</p>';
+
+  document.getElementById('chapterPYQ').innerHTML=
+    '<p class="muted">Previous year questions will appear here.</p>';
+
+  document.getElementById('chapterTest').innerHTML=
+    '<p class="muted">Chapter tests will appear here.</p>';
+
+  document.getElementById('chapterLinks').innerHTML=
+    '<p class="muted">Important links will appear here.</p>';
 
   panel.style.display='block';
-  title.textContent=track[0]+' - Subjects';
-
-  const subjects=trackSubjects[track[0]]||[];
-
-  list.innerHTML=subjects.map(s=>`
-    <div class="card tile">
-      <h3>${s}</h3>
-      <button class="action" onclick="openSubject('${s}')">
-        Open Subject
-      </button>
-    </div>
-  `).join('');
-
   panel.scrollIntoView({behavior:'smooth'});
 }
-
 const subjectChapters={
   "Physics":["Units and Dimensions","Motion","Laws of Motion","Work Power Energy","Gravitation"],
   "Chemistry":["Atomic Structure","Periodic Table","Chemical Bonding","Thermodynamics","Organic Chemistry"],
@@ -1412,28 +1416,34 @@ const subjectChapters={
   "General Knowledge":["History","Geography","Current Affairs"]
 };
 
-function openSubject(subject){
-  const panel=document.getElementById('chapterDetailPanel');
-  const title=document.getElementById('chapterDetailTitle');
-  const list=document.getElementById('chapterList');
+function openChapter(subject,chapter){
+  const panel=document.getElementById('chapterContentPanel');
+
+  document.getElementById('chapterContentTitle').textContent=
+    subject+' - '+chapter;
+
+  document.getElementById('chapterNotes').innerHTML=
+    '<p class="muted">Notes and PDF materials will appear here.</p>';
+
+  document.getElementById('chapterVideos').innerHTML=
+    '<p class="muted">Video lectures will appear here.</p>';
+
+  document.getElementById('chapterQuiz').innerHTML=
+    '<p class="muted">Quiz and practice questions will appear here.</p>';
+
+  document.getElementById('chapterPYQ').innerHTML=
+    '<p class="muted">Previous year questions will appear here.</p>';
+
+  document.getElementById('chapterTest').innerHTML=
+    '<p class="muted">Chapter tests will appear here.</p>';
+
+  document.getElementById('chapterLinks').innerHTML=
+    '<p class="muted">Important links will appear here.</p>';
 
   panel.style.display='block';
-  title.textContent=subject+' - Chapters';
-
-  const chapters=subjectChapters[subject]||["Chapter 1","Chapter 2","Chapter 3"];
-
-  list.innerHTML=chapters.map(ch=>`
-    <div class="card tile">
-      <h3>${ch}</h3>
-      <button class="action" onclick="openChapter('${subject}','${ch}')">
-        Open Chapter
-      </button>
-    </div>
-  `).join('');
-
   panel.scrollIntoView({behavior:'smooth'});
 }
- function openChapter(subject,chapter){
+function openChapter(subject,chapter){
   const panel=document.getElementById('chapterContentPanel');
 
   document.getElementById('chapterContentTitle').textContent=
