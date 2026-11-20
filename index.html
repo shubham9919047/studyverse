@@ -1011,6 +1011,14 @@ main{padding:28px 34px 50px;max-width:1500px;width:100%;margin:auto}.top{display
 
   <input id="materialUrl" class="field"
     placeholder="PDF or resource URL">
+   <input id="materialPdfFile" class="field"
+  type="file" accept="application/pdf">
+
+<button class="action" onclick="uploadStudyPDF()">
+  Upload PDF
+</button>
+
+<p id="pdfUploadMessage" class="muted"></p>
 
   <select id="materialAccess" class="field">
     <option value="free">Free</option>
