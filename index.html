@@ -1342,6 +1342,7 @@ function showPage(id, saveHistory = true) {
 
   if (saveHistory && currentPage && currentPage.id !== id) {
     pageHistory.push(currentPage.id);
+    window.history.pushState({ page: id }, '', '#' + id);
   }
 
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -1364,6 +1365,10 @@ function goBackPage() {
     showPage(previousPage, false);
   }
 }
+
+window.addEventListener('popstate', function () {
+  goBackPage();
+});
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 function notify(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
 const tracks=[
@@ -1404,6 +1409,9 @@ const trackSubjects={
   "Other Exams":["General Studies","Maths","Science","English"]
 };
 
+ window.addEventListener('popstate', function () {
+  goBackPage();
+});
 function openTrack(index){
   const track=tracks[index];
   const panel=document.getElementById('trackDetailPanel');
